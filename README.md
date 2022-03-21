@@ -6,7 +6,7 @@ Although this library license is MIT, it uses ARM precompiled static library, wh
 
 ## The Fork
 
-A library that calls itself "Crypto" should have Crypto functions – especially since the CC310 has them. So I added a new class, `nRFCrypto_AES`, which provides AES encryption and decryption, ECB, CBC and CTR modes. An example sketch is provided.
+A library that calls itself "Crypto" should have Crypto functions – especially since the CC310 has them. So I added a new class, `nRFCrypto_AES`, which provides AES encryption and decryption, ECB, CBC and CTR modes. An example sketch is provided. For the key, and the IV, I am using the library's `Random` object. Might as well...
 
 ![Part1](Part1.jpg)
 ![Part2](Part2.jpg)

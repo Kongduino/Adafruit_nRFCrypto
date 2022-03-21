@@ -45,24 +45,35 @@ void setup() {
   aes.begin();
   Serial.println(" done!");
   char *msg = "Hello user! This is a plain text string!";
+  // please note dear reader – and you should RTFM – that this string's length isn't a multiple of 16.
+  // but I am foolish that way.
   uint8_t msgLen = strlen(msg);
-  char encBuf[256] = {0};
-  char decBuf[256] = {0};
+  char encBuf[256] = {0}; // Let's make sure we have enough space for the encrypted string
+  char decBuf[256] = {0}; // Let's make sure we have enough space for the decrypted string
+  // I could provide a function that calculates the required length though. TODO
   Serial.println("Plain text:");
   hexDump((unsigned char *)msg, msgLen);
   uint8_t pKey[16] = {0};
   uint8_t pKeyLen = 16;
+  // To generate the key:
+  // Might as well use the random function, amirite?
   nRFCrypto.Random.generate(pKey, 16);
   Serial.println("pKey:");
   hexDump(pKey, 16);
   uint8_t IV[16] = {1};
+  // We don't need an IV, yet.
   int rslt = aes.Process(msg, msgLen, IV, pKey, pKeyLen, encBuf, aes.encryptFlag, aes.ecbMode);
+  // if rslt is negative, we have an error
+  // But I know there won't be any here, natch
+  // If positive, it's the total length of the buffer
   Serial.println("ECB Encoded:");
   hexDump((unsigned char *)encBuf, rslt);
   rslt = aes.Process(encBuf, rslt, IV, pKey, pKeyLen, decBuf, aes.decryptFlag, aes.ecbMode);
   Serial.println("ECB Decoded:");
   hexDump((unsigned char *)decBuf, rslt);
 
+  // Now we need an IV!
+  // Might as well use the random function, amirite?
   nRFCrypto.Random.generate(IV, 16);
   Serial.println("IV:");
   hexDump(IV, 16);
