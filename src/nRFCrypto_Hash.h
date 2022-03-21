@@ -27,25 +27,18 @@
 
 #include "nrf_cc310/include/crys_hash.h"
 
-class nRFCrypto_Hash
-{
+class nRFCrypto_Hash {
   public:
     nRFCrypto_Hash(void);
-
     bool begin(CRYS_HASH_OperationMode_t mode);
-    bool begin(uint32_t mode)
-    {
+    bool begin(uint32_t mode) {
       return begin ((CRYS_HASH_OperationMode_t) mode);
     }
-
     bool update(uint8_t data[], size_t size);
-
     uint8_t end(uint32_t result[16]);
-    uint8_t end(uint8_t  result[64])
-    {
+    uint8_t end(uint8_t  result[64]) {
       return end((uint32_t*) result);
     }
-
   private:
     CRYS_HASHUserContext_t _context;
     uint8_t _digest_len;

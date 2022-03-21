@@ -1,18 +1,14 @@
 /*
    The MIT License (MIT)
-
    Copyright (c) 2021 by Kongduino
-
    Permission is hereby granted, free of charge, to any person obtaining a copy
    of this software and associated documentation files (the "Software"), to deal
    in the Software without restriction, including without limitation the rights
    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
    copies of the Software, and to permit persons to whom the Software is
    furnished to do so, subject to the following conditions:
-
    The above copyright notice and this permission notice shall be included in
    all copies or substantial portions of the Software.
-
    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -27,7 +23,6 @@
 //--------------------------------------------------------------------+
 // MACRO TYPEDEF CONSTANT ENUM DECLARATION
 //--------------------------------------------------------------------+
-
 
 //------------- IMPLEMENTATION -------------//
 nRFCrypto_AES::nRFCrypto_AES(void) {
@@ -47,8 +42,9 @@ void nRFCrypto_AES::end() {
   SaSi_LibFini();
 }
 
-int nRFCrypto_AES::Process(char *msg, uint8_t msgLen, uint8_t *IV, uint8_t *pKey, uint8_t pKeyLen,
-                           char *retBuf, SaSiAesEncryptMode_t modeFlag, SaSiAesOperationMode_t opMode) {
+int nRFCrypto_AES::Process(
+  char *msg, uint8_t msgLen, uint8_t *IV, uint8_t *pKey, uint8_t pKeyLen,
+  char *retBuf, SaSiAesEncryptMode_t modeFlag, SaSiAesOperationMode_t opMode) {
   /*
     msg:    the message you want to encrypt. does not need to be a multiple of 16 bytes.
     msgLen:   its length
@@ -95,23 +91,15 @@ int nRFCrypto_AES::Process(char *msg, uint8_t msgLen, uint8_t *IV, uint8_t *pKey
       if (err != SASI_OK) return -5;
     }
     err = SaSi_AesFinish(
-            &pContext,
-            (size_t) 16,
-            (uint8_t *) (pDataIn + cx),
-            (size_t) 16,
-            (uint8_t *) (retBuf + cx),
-            &dataOutBuffSize);
+            &pContext, (size_t) 16, (uint8_t *) (pDataIn + cx),
+            (size_t) 16, (uint8_t *) (retBuf + cx), &dataOutBuffSize);
     if (err != SASI_OK) return -6;
   } else {
     err = SaSi_AesBlock(&pContext, (uint8_t *) pDataIn, 16, (uint8_t *) retBuf);
     if (err != SASI_OK) return -5;
     err = SaSi_AesFinish(
-            &pContext,
-            (size_t) 0,
-            (uint8_t *) (pDataIn),
-            (size_t) 0,
-            (uint8_t *) (retBuf),
-            &dataOutBuffSize);
+            &pContext, (size_t) 0, (uint8_t *) (pDataIn),
+            (size_t) 0, (uint8_t *) (retBuf), &dataOutBuffSize);
     if (err != SASI_OK) return -6;
   }
   return 0;

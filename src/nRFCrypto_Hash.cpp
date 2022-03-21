@@ -29,8 +29,7 @@
 //--------------------------------------------------------------------+
 
 // Length of Digest Op mode in bytes
-static const uint8_t digest_len_arr[] =
-{
+static const uint8_t digest_len_arr[] = {
   CRYS_HASH_SHA1_DIGEST_SIZE_IN_BYTES,
   CRYS_HASH_SHA224_DIGEST_SIZE_IN_BYTES,
   CRYS_HASH_SHA256_DIGEST_SIZE_IN_BYTES,
@@ -39,32 +38,23 @@ static const uint8_t digest_len_arr[] =
   CRYS_HASH_MD5_DIGEST_SIZE_IN_BYTES
 };
 
-
 //------------- IMPLEMENTATION -------------//
-nRFCrypto_Hash::nRFCrypto_Hash(void)
-{
+nRFCrypto_Hash::nRFCrypto_Hash(void) {
   _digest_len = 0;
 }
 
-bool nRFCrypto_Hash::begin(CRYS_HASH_OperationMode_t mode)
-{
+bool nRFCrypto_Hash::begin(CRYS_HASH_OperationMode_t mode) {
   VERIFY_ERROR( CRYS_HASH_Init(&_context, mode), false );
-  if ( mode < CRYS_HASH_NumOfModes ) _digest_len = digest_len_arr[mode];
-
+  if (mode < CRYS_HASH_NumOfModes) _digest_len = digest_len_arr[mode];
   return true;
 }
 
-bool nRFCrypto_Hash::update(uint8_t data[], size_t size)
-{
+bool nRFCrypto_Hash::update(uint8_t data[], size_t size) {
   VERIFY_ERROR( CRYS_HASH_Update(&_context, data, size), false );
   return true;
 }
 
-uint8_t nRFCrypto_Hash::end(uint32_t result[16])
-{
+uint8_t nRFCrypto_Hash::end(uint32_t result[16]) {
   VERIFY_ERROR( CRYS_HASH_Finish(&_context, result), 0);
   return _digest_len;
 }
-
-
-

@@ -27,23 +27,17 @@
 
 #include "nrf_cc310/include/crys_rnd.h"
 
-class nRFCrypto_Random
-{
+class nRFCrypto_Random {
   public:
     nRFCrypto_Random(void);
-
     bool begin(void);
     void end(void);
-
     CRYS_RND_State_t* getContext(void);
-
     bool addAdditionalInput(uint8_t* input, uint16_t size);
     bool reseed(void);
     bool generate(uint8_t* buf, uint16_t count);
     bool generateInRange(uint8_t* buf, uint32_t bitsize, uint8_t* max = NULL);
-
     // enterKAtMode() DisableKatMoe()
-
   private:
     CRYS_RND_State_t _state;
     bool _begun;
