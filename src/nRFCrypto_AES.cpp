@@ -68,18 +68,10 @@ int nRFCrypto_AES::Process(
   keyData.keySize = pKeyLen;
   err = SaSi_AesSetKey(&pContext, _userKey, &keyData, sizeof(keyData));
   if (err != SASI_OK) return -4;
-  uint8_t cx, ln = msgLen, ptLen, modulo = 0;
-  if (msgLen < 16) {
-    ptLen = 16;
-    modulo = 16 - msgLen;
-  } else {
-    modulo = msgLen % 16;
-    if (modulo != 0) {
-      uint8_t x = (msgLen / 16);
-      ptLen = (x + 1) * 16;
-      modulo = 16 - modulo;
-    } else ptLen = msgLen;
-  }
+  uint8_t cx, ln = msgLen, ptLen;
+  ptLen = blockLen(msgLen);
+  uint8_t modulo = ptLen%16;
+  if(modulo > 0) modulo = 16 - modulo;
   char pDataIn[ptLen] = {modulo};
   // Padding included!
   memcpy(pDataIn, msg, msgLen);
@@ -102,5 +94,20 @@ int nRFCrypto_AES::Process(
             (size_t) 0, (uint8_t *) (retBuf), &dataOutBuffSize);
     if (err != SASI_OK) return -6;
   }
-  return 0;
+  return ptLen;
+}
+
+uint8_t nRFCrypto_AES::blockLen(uint8_t msgLen) {
+  if (msgLen < 16) {
+    return 16;
+  } else {
+    uint8_t modulo = 0, myLen;
+    modulo = msgLen % 16;
+    if (modulo != 0) {
+      uint8_t x = (msgLen / 16);
+      myLen = (x + 1) * 16;
+      modulo = 16 - modulo;
+    } else myLen = msgLen;
+    return myLen;
+  }
 }
