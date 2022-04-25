@@ -68,6 +68,8 @@ int nRFCrypto_AES::Process(
   keyData.keySize = pKeyLen;
   err = SaSi_AesSetKey(&pContext, _userKey, &keyData, sizeof(keyData));
   if (err != SASI_OK) return -4;
+  err = SaSi_AesSetIv(&pContext, IV);
+  if (err != SASI_OK) return -7;
   uint8_t cx, ln = msgLen, ptLen;
   ptLen = blockLen(msgLen);
   uint8_t modulo = ptLen%16;
