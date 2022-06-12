@@ -82,23 +82,14 @@ int nRFCrypto_AES::Process(
   memcpy(pDataIn, msg, msgLen);
   size_t dataOutBuffSize;
   memset(retBuf, 0, ptLen);
-  if (ptLen > 16) {
-    for (cx = 0; cx < ptLen - 16; cx += 16) {
-      err = SaSi_AesBlock(&pContext, (uint8_t *) (pDataIn + cx), 16, (uint8_t *) (retBuf + cx));
-      if (err != SASI_OK) return -5;
-    }
-    err = SaSi_AesFinish(
-            &pContext, (size_t) 16, (uint8_t *) (pDataIn + cx),
-            (size_t) 16, (uint8_t *) (retBuf + cx), &dataOutBuffSize);
-    if (err != SASI_OK) return -6;
-  } else {
-    err = SaSi_AesBlock(&pContext, (uint8_t *) pDataIn, 16, (uint8_t *) retBuf);
+  for (cx = 0; cx < ptLen; cx += 16) {
+    err = SaSi_AesBlock(&pContext, (uint8_t *) (pDataIn + cx), 16, (uint8_t *) (retBuf + cx));
     if (err != SASI_OK) return -5;
-    err = SaSi_AesFinish(
-            &pContext, (size_t) 0, (uint8_t *) (pDataIn),
-            (size_t) 0, (uint8_t *) (retBuf), &dataOutBuffSize);
-    if (err != SASI_OK) return -6;
   }
+  err = SaSi_AesFinish(
+          &pContext, (size_t) 0, (uint8_t *) (pDataIn + cx),
+          (size_t) 0, (uint8_t *) (retBuf + cx), &dataOutBuffSize);
+  if (err != SASI_OK) return -6;
   return ptLen;
 }
 
