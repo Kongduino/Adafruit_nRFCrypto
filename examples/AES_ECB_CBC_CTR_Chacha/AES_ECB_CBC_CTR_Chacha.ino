@@ -1,6 +1,7 @@
 #include <Adafruit_nRFCrypto.h>
 
 nRFCrypto_AES aes;
+nRFCrypto_Chacha urara; // You need to speak Korean to understand this one ;-)
 
 void hexDump(unsigned char *buf, uint16_t len) {
   char alphabet[17] = "0123456789abcdef";
@@ -39,6 +40,7 @@ void setup() {
       break;
     }
   }
+  delay(1000);
   Serial.println("\nnRF AES test");
   Serial.print(" * begin");
   nRFCrypto.begin();
@@ -84,6 +86,22 @@ void setup() {
   rslt = aes.Process(encBuf, rslt, IV, pKey, pKeyLen, decBuf, aes.decryptFlag, aes.ctrMode);
   Serial.println("CTR Decoded:");
   hexDump((unsigned char *)decBuf, rslt);
+
+  CRYS_CHACHA_Nonce_t pNonce;
+  CRYS_CHACHA_Key_t myKey;
+  nRFCrypto.Random.generate((uint8_t*)myKey, 32);
+  Serial.println("myKey:");
+  hexDump((uint8_t*)myKey, 32);
+  nRFCrypto.Random.generate((uint8_t*)pNonce, 12);
+  uint32_t initialCounter = 0;
+  Serial.println("Nonce:");
+  hexDump((uint8_t*)pNonce, 12);
+  rslt = urara.Process((unsigned char *)msg, msgLen, pNonce, myKey, pKeyLen, (unsigned char *)encBuf, urara.encryptFlag, initialCounter);
+  Serial.println("Chacha Encoded:");
+  hexDump((unsigned char *)encBuf, msgLen);
+  rslt = urara.Process((unsigned char *)msg, msgLen, pNonce, myKey, pKeyLen, (unsigned char *)decBuf, urara.decryptFlag, initialCounter);
+  Serial.println("Chacha Decoded:");
+  hexDump((unsigned char *)decBuf, msgLen);
 }
 
 void loop() {

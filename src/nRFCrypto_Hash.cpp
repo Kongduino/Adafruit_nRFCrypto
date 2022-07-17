@@ -44,17 +44,17 @@ nRFCrypto_Hash::nRFCrypto_Hash(void) {
 }
 
 bool nRFCrypto_Hash::begin(CRYS_HASH_OperationMode_t mode) {
-  VERIFY_ERROR( CRYS_HASH_Init(&_context, mode), false );
+  VERIFY_ERROR(CRYS_HASH_Init(&_context, mode), false );
   if (mode < CRYS_HASH_NumOfModes) _digest_len = digest_len_arr[mode];
   return true;
 }
 
 bool nRFCrypto_Hash::update(uint8_t data[], size_t size) {
-  VERIFY_ERROR( CRYS_HASH_Update(&_context, data, size), false );
+  VERIFY_ERROR(CRYS_HASH_Update(&_context, data, size), false );
   return true;
 }
 
 uint8_t nRFCrypto_Hash::end(uint32_t result[16]) {
-  VERIFY_ERROR( CRYS_HASH_Finish(&_context, result), 0);
+  VERIFY_ERROR(CRYS_HASH_Finish(&_context, result), 0);
   return _digest_len;
 }

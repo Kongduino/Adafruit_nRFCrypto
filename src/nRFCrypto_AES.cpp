@@ -91,7 +91,7 @@ int nRFCrypto_AES::Process(
           (size_t) 0, (uint8_t *) (retBuf + cx), &dataOutBuffSize);
   if (err != SASI_OK) return -6;
   return ptLen;
-}
+} // Thanks to Caveman99 for the fix!
 
 uint8_t nRFCrypto_AES::blockLen(uint8_t msgLen) {
   if (msgLen < 16) {

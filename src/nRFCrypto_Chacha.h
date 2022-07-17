@@ -1,6 +1,6 @@
 /*
    The MIT License (MIT)
-   Copyright (c) 2020 Ha Thach (tinyusb.org) for Adafruit Industries
+   Copyright (c) 2021 Kongduino
    Permission is hereby granted, free of charge, to any person obtaining a copy
    of this software and associated documentation files (the "Software"), to deal
    in the Software without restriction, including without limitation the rights
@@ -18,34 +18,27 @@
    THE SOFTWARE.
 */
 
-#ifndef ADAFRUIT_NRFCRYPTO_H_
-#define ADAFRUIT_NRFCRYPTO_H_
+#ifndef NRFCRYPTO_CHACHA_H_
+#define NRFCRYPTO_CHACHA_H_
 
-#include "common_inc.h"
-#include "rtos.h"
-#include "nRFCrypto_Random.h"
-#include "nRFCrypto_Hash.h"
-#include "nRFCrypto_AES.h"
-#include "nRFCrypto_Chacha.h"
-#include "ecc/nRFCrypto_ECC.h"
+#include "nrf_cc310/include/crys_chacha_error.h"
+#include "nrf_cc310/include/crys_chacha.h"
 
-class Adafruit_nRFCrypto {
+class nRFCrypto_Chacha {
   public:
-    Adafruit_nRFCrypto(void);
+    nRFCrypto_Chacha(void);
     bool begin(void);
     void end(void);
-    nRFCrypto_Random Random;
+    int Process(
+      uint8_t *pDataIn, uint32_t dataInSize,
+      CRYS_CHACHA_Nonce_t pNonce, CRYS_CHACHA_Key_t pKey, uint32_t keyLen,
+      uint8_t *pDataOut,
+      CRYS_CHACHA_EncryptMode_t modeFlag, uint32_t initialCounter
+    );
+    CRYS_CHACHA_EncryptMode_t encryptFlag = (CRYS_CHACHA_EncryptMode_t) 0;
+    CRYS_CHACHA_EncryptMode_t decryptFlag = (CRYS_CHACHA_EncryptMode_t) 1;
   private:
     bool _begun;
 };
 
-extern Adafruit_nRFCrypto nRFCrypto;
-
-#if !CFG_DEBUG
-#define VERIFY_CRYS VERIFY_ERROR
-#else
-#define VERIFY_CRYS(...) _GET_3RD_ARG(__VA_ARGS__, VERIFY_ERR_2ARGS, VERIFY_ERR_1ARGS)(__VA_ARGS__, dbg_strerr_crys)
-const char* dbg_strerr_crys(int32_t err);
-#endif
-
-#endif /* ADAFRUIT_NRFCRYPTO_H_ */ 
+#endif /* NRFCRYPTO_RANDOM_H_ */
