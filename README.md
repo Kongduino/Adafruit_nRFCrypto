@@ -10,3 +10,7 @@ A library that calls itself "Crypto" should have Crypto functions – especially
 
 ![Part1](Part1.jpg)
 ![Part2](Part2.jpg)
+
+## CHACHA
+
+Chacha doesn't work for now, looking into it...
