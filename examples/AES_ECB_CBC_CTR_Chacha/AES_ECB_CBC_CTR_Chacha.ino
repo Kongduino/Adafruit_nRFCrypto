@@ -1,7 +1,6 @@
 #include <Adafruit_nRFCrypto.h>
 
 nRFCrypto_AES aes;
-nRFCrypto_Chacha urara; // You need to speak Korean to understand this one ;-)
 
 void hexDump(unsigned char *buf, uint16_t len) {
   char alphabet[17] = "0123456789abcdef";
@@ -52,13 +51,14 @@ void setup() {
   uint8_t msgLen = strlen(msg);
   // A function that calculates the required length. √
   uint8_t myLen = aes.blockLen(msgLen);
-  // Serial.println("myLen = " + String(myLen));
-  char encBuf[myLen] = {0}; // Let's make sure we have enough space for the encrypted string
-  char decBuf[myLen] = {0}; // Let's make sure we have enough space for the decrypted string
+  char encBuf[64] = {0}; // Let's make sure we have enough space for the encrypted string
+  char decBuf[64] = {0}; // Let's make sure we have enough space for the decrypted string
   Serial.println("Plain text:");
   hexDump((unsigned char *)msg, msgLen);
   uint8_t pKey[16] = {0};
   uint8_t pKeyLen = 16;
+  // Might as well make good use of the Random function.
+  // Alternate could be via LoRa. But since we're testing the nRFCrypto lib... :-)
   nRFCrypto.Random.generate(pKey, 16);
   Serial.println("pKey:");
   hexDump(pKey, 16);
@@ -87,22 +87,96 @@ void setup() {
   Serial.println("CTR Decoded:");
   hexDump((unsigned char *)decBuf, rslt);
 
+  uint8_t orgLen = msgLen;
+  msgLen = 64;
+  memset(decBuf, 0, msgLen);
+  memset(encBuf, 0, msgLen);
+  nRFCrypto_Chacha urara; // You need to speak Korean to understand this one ;-)
+  urara.begin();
   CRYS_CHACHA_Nonce_t pNonce;
   CRYS_CHACHA_Key_t myKey;
-  nRFCrypto.Random.generate((uint8_t*)myKey, 32);
-  Serial.println("myKey:");
-  hexDump((uint8_t*)myKey, 32);
-  nRFCrypto.Random.generate((uint8_t*)pNonce, 12);
   uint32_t initialCounter = 0;
+  pKeyLen = 32;
+  // We're going to pass a 44-byte array to the Process function:
+  // The first 32 are the key, the next 12 the nonce.
+  // The Process functions builds the CRYS_CHACHAUserContext_t, CRYS_CHACHA_Nonce_t and CRYS_CHACHA_Key_t objects itself.
+  uint8_t temp[44];
+  nRFCrypto.Random.generate(temp, 44);
+  Serial.println("myKey:");
+  hexDump((uint8_t*)temp, pKeyLen);
   Serial.println("Nonce:");
-  hexDump((uint8_t*)pNonce, 12);
-  rslt = urara.Process((unsigned char *)msg, msgLen, pNonce, myKey, pKeyLen, (unsigned char *)encBuf, urara.encryptFlag, initialCounter);
-  Serial.println("Chacha Encoded:");
-  hexDump((unsigned char *)encBuf, msgLen);
-  rslt = urara.Process((unsigned char *)msg, msgLen, pNonce, myKey, pKeyLen, (unsigned char *)decBuf, urara.decryptFlag, initialCounter);
-  Serial.println("Chacha Decoded:");
-  hexDump((unsigned char *)decBuf, msgLen);
+  hexDump((uint8_t*)temp + 32, 12);
+
+  // orig = our "plaintext"
+  uint8_t orig[93];
+  // enc = our "plaintext", then encrypted version (in place), then, hopefully the properly decoded version.
+  uint8_t enc[93];
+  nRFCrypto.Random.generate(orig, 93);
+
+  // First test with a block smaller than the minimum block size (64)
+  Serial.println("\nOriginal [32]:");
+  memcpy(enc, orig, 32);
+  hexDump(enc, 32);
+  rslt = urara.Process(enc, 32, temp, urara.encryptFlag);
+  Serial.printf(" * rslt = 0x%08x\n", rslt);
+  if (rslt != 0) {
+    explainError(rslt, msgLen);
+    return;
+  } else {
+    Serial.println("Chacha Encoded:");
+    hexDump(enc, 64);
+  }
+  rslt = urara.Process(enc, 32, temp, urara.decryptFlag);
+  Serial.printf(" * rslt = 0x%08x\n", rslt);
+  if (rslt != 0) explainError(rslt, msgLen);
+  else {
+    Serial.println("Chacha Decoded (only the first 32 bytes count):");
+    hexDump(enc, 64);
+    if (memcmp(orig, enc, 32) == 0) Serial.println("Enc/Dec roud-trip successful!");
+    else Serial.println("Enc/Dec roud-trip fail!");
+  }
+
+  // Second test with a block longer than the minimum block size (64)
+  // and not a multiple of 64
+  memcpy(enc, orig, 93);
+  Serial.println("\nOriginal [93]:");
+  hexDump(enc, 93);
+  rslt = urara.Process(enc, 93, temp, urara.encryptFlag);
+  Serial.printf(" * rslt = 0x%08x\n", rslt);
+  if (rslt != 0) {
+    explainError(rslt, msgLen);
+    return;
+  } else {
+    Serial.println("Chacha Encoded:");
+    hexDump(enc, 93);
+  }
+  rslt = urara.Process(enc, 93, temp, urara.decryptFlag);
+  Serial.printf(" * rslt = 0x%08x\n", rslt);
+  if (rslt != 0) explainError(rslt, msgLen);
+  else {
+    Serial.println("Chacha Decoded:");
+    hexDump(enc, 93);
+    if (memcmp(orig, enc, 93) == 0) Serial.println("Enc/Dec roud-trip successful!");
+    else Serial.println("Enc/Dec roud-trip fail!");
+  }
 }
 
 void loop() {
+}
+
+void explainError(int rslt, uint8_t msgLen) {
+  Serial.print(" * ");
+  if (CRYS_CHACHA_INVALID_NONCE_ERROR == rslt) Serial.println("CRYS_CHACHA_INVALID_NONCE_ERROR");
+  else if (CRYS_CHACHA_ILLEGAL_KEY_SIZE_ERROR == rslt) Serial.println("CRYS_CHACHA_ILLEGAL_KEY_SIZE_ERROR");
+  else if (CRYS_CHACHA_INVALID_KEY_POINTER_ERROR == rslt) Serial.println("CRYS_CHACHA_INVALID_KEY_POINTER_ERROR");
+  else if (CRYS_CHACHA_INVALID_ENCRYPT_MODE_ERROR == rslt) Serial.println("CRYS_CHACHA_INVALID_ENCRYPT_MODE_ERROR");
+  else if (CRYS_CHACHA_DATA_IN_POINTER_INVALID_ERROR == rslt) Serial.println("CRYS_CHACHA_DATA_IN_POINTER_INVALID_ERROR");
+  else if (CRYS_CHACHA_DATA_OUT_POINTER_INVALID_ERROR == rslt) Serial.println("CRYS_CHACHA_DATA_OUT_POINTER_INVALID_ERROR");
+  else if (CRYS_CHACHA_INVALID_USER_CONTEXT_POINTER_ERROR == rslt) Serial.println("CRYS_CHACHA_INVALID_USER_CONTEXT_POINTER_ERROR");
+  else if (CRYS_CHACHA_CTX_SIZES_ERROR == rslt) Serial.println("CRYS_CHACHA_CTX_SIZES_ERROR");
+  else if (CRYS_CHACHA_INVALID_NONCE_PTR_ERROR == rslt) Serial.println("CRYS_CHACHA_INVALID_NONCE_PTR_ERROR");
+  else if (CRYS_CHACHA_DATA_IN_SIZE_ILLEGAL == rslt) Serial.printf("CRYS_CHACHA_DATA_IN_SIZE_ILLEGAL: %d vs %d\n", msgLen, CRYS_CHACHA_BLOCK_SIZE_IN_BYTES);
+  else if (CRYS_CHACHA_GENERAL_ERROR == rslt) Serial.println("CRYS_CHACHA_GENERAL_ERROR");
+  else if (CRYS_CHACHA_IS_NOT_SUPPORTED == rslt) Serial.println("CRYS_CHACHA_IS_NOT_SUPPORTED");
+  else Serial.println("No idea...");
 }
