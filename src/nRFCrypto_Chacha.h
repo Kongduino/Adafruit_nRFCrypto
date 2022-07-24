@@ -29,12 +29,7 @@ class nRFCrypto_Chacha {
     nRFCrypto_Chacha(void);
     bool begin(void);
     void end(void);
-    int Process(
-      uint8_t *pDataIn, uint32_t dataInSize,
-      CRYS_CHACHA_Nonce_t pNonce, CRYS_CHACHA_Key_t pKey, uint32_t keyLen,
-      uint8_t *pDataOut,
-      CRYS_CHACHA_EncryptMode_t modeFlag, uint32_t initialCounter
-    );
+    CRYSError_t Process(uint8_t *, uint32_t, uint8_t *, CRYS_CHACHA_EncryptMode_t);
     CRYS_CHACHA_EncryptMode_t encryptFlag = (CRYS_CHACHA_EncryptMode_t) 0;
     CRYS_CHACHA_EncryptMode_t decryptFlag = (CRYS_CHACHA_EncryptMode_t) 1;
   private:

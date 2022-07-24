@@ -18,6 +18,7 @@
    THE SOFTWARE.
 */
 
+#include "Arduino.h"
 #include "nRFCrypto_Chacha.h"
 #include "nrf_cc310/include/crys_chacha.h"
 #include <cstring>
@@ -40,31 +41,40 @@ void nRFCrypto_Chacha::end() {
   _begun = false;
 }
 
-int nRFCrypto_Chacha::Process(
-      uint8_t *pDataIn,  /*!< [in] A pointer to the buffer of the input data to the CHACHA.
-      The pointer does not need to be aligned. must not be null. */
-      uint32_t dataInSize, /* must not be 0 */
-      CRYS_CHACHA_Nonce_t pNonce,
-      CRYS_CHACHA_Key_t pKey,
-      uint32_t keyLen, /* must not be 0 */
-      uint8_t *pDataOut, /*!< [out] A pointer to the buffer of the output data from the CHACHA.
-      The pointer does not need to be aligned. must not be null. */
-      CRYS_CHACHA_EncryptMode_t modeFlag,
-      uint32_t initialCounter
-      ) {
-  /*
-    pDataIn:  the message you want to en/decrypt. needs to be a multiple of 32 bytes.
-    msgLen:   its length
-    pNonce:    the IV (12 bytes)
-    pKey:     the key (max size 32 bytes)
-    pKeyLen:  its length
-    pDataOut: the return buffer.
-    modeFlag: encryptFlag / decryptFlag
-  */
-  if (!_begun) return -1;
-  CRYS_CHACHAUserContext_t pContext;
-  CRYSError_t error = CRYS_CHACHA(
-    pNonce, (CRYS_CHACHA_NonceSize_t) 96, pKey, initialCounter,
-    modeFlag, pDataIn, dataInSize, pDataOut
-  );
+CRYSError_t nRFCrypto_Chacha::Process(uint8_t *msg, uint32_t msgLen, uint8_t *myData, CRYS_CHACHA_EncryptMode_t mode) {
+  CRYS_CHACHAUserContext_t pContextID;
+  CRYS_CHACHA_Nonce_t pNonce;
+  CRYS_CHACHA_Key_t myKey;
+  uint32_t initialCounter;
+  uint8_t finalLen = msgLen;
+  if (finalLen < 64) finalLen = 64;
+  uint8_t rounds = finalLen / 64;
+  uint8_t extra = finalLen % 64;
+  if (extra > 0) finalLen = (rounds + 1) * 64;
+  uint8_t pDataOut[finalLen];
+  uint8_t pDataIn[64];
+  // myData: first 32 bytes = key. Next 12 bytes: Nonce.
+  for (uint8_t ix = 0; ix < 32; ix++) myKey[ix] = myData[ix];
+  for (uint8_t ix = 32; ix < 44; ix++) pNonce[ix - 32] = myData[ix];
+  CRYSError_t error = CRYS_CHACHA_Init(&pContextID, pNonce, (CRYS_CHACHA_NonceSize_t) 1, myKey, initialCounter++, mode);
+  if (error != 0) return error;
+  uint8_t pos = 0;
+  for (uint8_t ix = 0; ix < rounds; ix++) {
+    Serial.printf("Round #%d: %d..%d / %d\n", (ix+1), (ix*64), (ix*64+63), finalLen);
+    memcpy(pDataIn, (msg + pos), 64);
+    error = CRYS_CHACHA_Block(&pContextID, pDataIn, 64, pDataOut + pos);
+    pos += 64;
+    if (error != 0) return error;
+  }
+  if (extra > 0) {
+    Serial.printf("Extra round: %d..%d / %d\n", (rounds*64), (rounds*64+extra-1), msgLen);
+    memset(pDataIn + extra, 64 - extra, 64 - extra);
+    memcpy(pDataIn, (msg + pos), extra);
+    error = CRYS_CHACHA_Block(&pContextID, pDataIn, 64, pDataOut + pos);
+    if (error != 0) return error;
+  }
+  memcpy(msg, pDataOut, msgLen);
+  error = CRYS_CHACHA_Finish(&pContextID, NULL, 0, pDataOut);
+  if (error != 0) return error;
+  return CRYS_CHACHA_Free(&pContextID);
 }
