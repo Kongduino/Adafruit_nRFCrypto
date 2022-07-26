@@ -6,12 +6,16 @@ Although this library license is MIT, it uses ARM precompiled static library, wh
 
 ## The Fork
 
-A library that calls itself "Crypto" should have Crypto functions – especially since the CC310 has them. So I added a new class, `nRFCrypto_AES`, which provides AES encryption and decryption, ECB, CBC and CTR modes. An example sketch is provided. For the key, and the IV, I am using the library's `Random` object. Might as well...
+This library has been tested with the RAKwireless Arduino BSP for RAK4631 (nRF52840-based) and the [Wisblock](https://github.com/RAKWireless/WisBlock) platform. Since the [RUI3](https://docs.rakwireless.com/RUI3/) platform is not RTOS based, which makes Adafruit libraries difficult, sometimes, to port, I ended up making a smaller, simpler version of this library for RUI3, hosted [here](https://github.com/Kongduino/RUI3_nRFCrypto_AES). It is usually late by a version or two.
+
+### AES 128
+
+A library that calls itself "Crypto" should have Crypto functions – especially since the CC310 has them. So I added a new class, `nRFCrypto_AES`, which provides AES encryption and decryption, ECB, CBC and CTR modes. An example sketch is provided. For the key, and the IV, I am using the library's `Random` object. Might as well make good use of what's available...
 
 ![Part1](Part1.jpg)
 ![Part2](Part2.jpg)
 
-## CHACHA
+### CHACHA
 
 I have finally managed to add Chacha, and, as far as I can tell, make it work. The library has still some Serial debugging code, which I'll get rid of soon, but it shows what's happening, so all's well. The example encrypts and decrypts a block of 32 bytes (minimum is 64 bytes), then a block of 93 bytes. So far so good.
 
