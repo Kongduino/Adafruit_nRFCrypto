@@ -10,9 +10,9 @@
     "platforms": "nRF52",
     "build": {
         "libArchive": false,
-		"flags": [
+	"flags": [
             "-Lsrc/cortex-m4/fpv4-sp-d16-hard",
-			"-lnrf_cc310_0.9.13-no-interrupts"
-		]
+	    "-lnrf_cc310_0.9.13-no-interrupts"
+	]
     }
 }
