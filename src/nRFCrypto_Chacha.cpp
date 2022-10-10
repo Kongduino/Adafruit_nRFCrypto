@@ -45,7 +45,7 @@ CRYSError_t nRFCrypto_Chacha::Process(uint8_t *msg, uint32_t msgLen, uint8_t *my
   CRYS_CHACHAUserContext_t pContextID;
   CRYS_CHACHA_Nonce_t pNonce;
   CRYS_CHACHA_Key_t myKey;
-  uint32_t initialCounter;
+  uint32_t initialCounter = 0;
   uint8_t finalLen = msgLen;
   if (finalLen < 64) finalLen = 64;
   uint8_t rounds = finalLen / 64;

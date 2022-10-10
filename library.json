@@ -1,0 +1,18 @@
+{
+    "name": "Adafruit nRFCrypto",
+    "version": "0.0.5",
+    "description": "Arduino Cryptography library using hardware-accelerated ARM CryptoCell CC310 on nRF52-based Adafruit Bluefruit LE modules",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/adafruit/Adafruit_nRFCrypto"
+    },
+    "frameworks": "arduino",
+    "platforms": "nRF52",
+    "build": {
+        "libArchive": false,
+	"flags": [
+            "-Lsrc/cortex-m4/fpv4-sp-d16-hard",
+	    "-lnrf_cc310_0.9.13-no-interrupts"
+	]
+    }
+}
