@@ -92,3 +92,7 @@ Chacha Decoded:
    +------------------------------------------------+ +----------------+
 Enc/Dec roud-trip successful!
 ```
+
+## UPDATE
+
+I have added timings.

@@ -63,29 +63,69 @@ void setup() {
   Serial.println("pKey:");
   hexDump(pKey, 16);
   uint8_t IV[16] = {1};
-  int rslt = aes.Process(msg, msgLen, IV, pKey, pKeyLen, encBuf, aes.encryptFlag, aes.ecbMode);
+  int rslt;
+  double t0 = millis();
+  uint32_t countProcess = 0;
+  while (millis() - t0 < 1000) {
+    rslt = aes.Process(msg, msgLen, IV, pKey, pKeyLen, encBuf, aes.encryptFlag, aes.ecbMode);
+    countProcess++;
+  }
   Serial.println("ECB Encoded:");
   hexDump((unsigned char *)encBuf, rslt);
-  rslt = aes.Process(encBuf, rslt, IV, pKey, pKeyLen, decBuf, aes.decryptFlag, aes.ecbMode);
+  Serial.printf("Number of rounds per second: %d\n", countProcess);
+
+  t0 = millis();
+  countProcess = 0;
+  while (millis() - t0 < 1000) {
+    rslt = aes.Process(encBuf, rslt, IV, pKey, pKeyLen, decBuf, aes.decryptFlag, aes.ecbMode);
+    countProcess++;
+  }
   Serial.println("ECB Decoded:");
   hexDump((unsigned char *)decBuf, rslt);
+  Serial.printf("Number of rounds per second: %d\n", countProcess);
 
   nRFCrypto.Random.generate(IV, 16);
   Serial.println("IV:");
   hexDump(IV, 16);
-  rslt = aes.Process(msg, msgLen, IV, pKey, pKeyLen, encBuf, aes.encryptFlag, aes.cbcMode);
+  t0 = millis();
+  countProcess = 0;
+  while (millis() - t0 < 1000) {
+    rslt = aes.Process(msg, msgLen, IV, pKey, pKeyLen, encBuf, aes.encryptFlag, aes.cbcMode);
+    countProcess++;
+  }
   Serial.println("CBC Encoded:");
   hexDump((unsigned char *)encBuf, rslt);
-  rslt = aes.Process(encBuf, rslt, IV, pKey, pKeyLen, decBuf, aes.decryptFlag, aes.cbcMode);
+  Serial.printf("Number of rounds per second: %d\n", countProcess);
+
+  t0 = millis();
+  countProcess = 0;
+  while (millis() - t0 < 1000) {
+    rslt = aes.Process(encBuf, rslt, IV, pKey, pKeyLen, decBuf, aes.decryptFlag, aes.cbcMode);
+    countProcess++;
+  }
   Serial.println("CBC Decoded:");
   hexDump((unsigned char *)decBuf, rslt);
+  Serial.printf("Number of rounds per second: %d\n", countProcess);
 
-  rslt = aes.Process(msg, msgLen, IV, pKey, pKeyLen, encBuf, aes.encryptFlag, aes.ctrMode);
+  t0 = millis();
+  countProcess = 0;
+  while (millis() - t0 < 1000) {
+    rslt = aes.Process(msg, msgLen, IV, pKey, pKeyLen, encBuf, aes.encryptFlag, aes.ctrMode);
+    countProcess++;
+  }
   Serial.println("CTR Encoded:");
   hexDump((unsigned char *)encBuf, rslt);
-  rslt = aes.Process(encBuf, rslt, IV, pKey, pKeyLen, decBuf, aes.decryptFlag, aes.ctrMode);
+  Serial.printf("Number of rounds per second: %d\n", countProcess);
+
+  t0 = millis();
+  countProcess = 0;
+  while (millis() - t0 < 1000) {
+    rslt = aes.Process(encBuf, rslt, IV, pKey, pKeyLen, decBuf, aes.decryptFlag, aes.ctrMode);
+    countProcess++;
+  }
   Serial.println("CTR Decoded:");
   hexDump((unsigned char *)decBuf, rslt);
+  Serial.printf("Number of rounds per second: %d\n", countProcess);
 
   uint8_t orgLen = msgLen;
   msgLen = 64;
@@ -117,7 +157,12 @@ void setup() {
   Serial.println("\nOriginal [32]:");
   memcpy(enc, orig, 32);
   hexDump(enc, 32);
-  rslt = urara.Process(enc, 32, temp, urara.encryptFlag);
+  t0 = millis();
+  countProcess = 0;
+  while (millis() - t0 < 1000) {
+    rslt = urara.Process(enc, 32, temp, urara.encryptFlag);
+    countProcess++;
+  }
   Serial.printf(" * rslt = 0x%08x\n", rslt);
   if (rslt != 0) {
     explainError(rslt, msgLen);
@@ -125,13 +170,20 @@ void setup() {
   } else {
     Serial.println("Chacha Encoded:");
     hexDump(enc, 64);
+    Serial.printf("Number of rounds per second: %d\n", countProcess);
   }
-  rslt = urara.Process(enc, 32, temp, urara.decryptFlag);
+  t0 = millis();
+  countProcess = 0;
+  while (millis() - t0 < 1000) {
+    rslt = urara.Process(enc, 32, temp, urara.decryptFlag);
+    countProcess++;
+  }
   Serial.printf(" * rslt = 0x%08x\n", rslt);
   if (rslt != 0) explainError(rslt, msgLen);
   else {
     Serial.println("Chacha Decoded (only the first 32 bytes count):");
     hexDump(enc, 64);
+    Serial.printf("Number of rounds per second: %d\n", countProcess);
     if (memcmp(orig, enc, 32) == 0) Serial.println("Enc/Dec roud-trip successful!");
     else Serial.println("Enc/Dec roud-trip fail!");
   }
@@ -141,7 +193,12 @@ void setup() {
   memcpy(enc, orig, 93);
   Serial.println("\nOriginal [93]:");
   hexDump(enc, 93);
-  rslt = urara.Process(enc, 93, temp, urara.encryptFlag);
+  t0 = millis();
+  countProcess = 0;
+  while (millis() - t0 < 1000) {
+    rslt = urara.Process(enc, 93, temp, urara.encryptFlag);
+    countProcess++;
+  }
   Serial.printf(" * rslt = 0x%08x\n", rslt);
   if (rslt != 0) {
     explainError(rslt, msgLen);
@@ -149,13 +206,19 @@ void setup() {
   } else {
     Serial.println("Chacha Encoded:");
     hexDump(enc, 93);
+    Serial.printf("Number of rounds per second: %d\n", countProcess);
   }
-  rslt = urara.Process(enc, 93, temp, urara.decryptFlag);
+  countProcess = 0;
+  while (millis() - t0 < 1000) {
+    rslt = urara.Process(enc, 93, temp, urara.decryptFlag);
+    countProcess++;
+  }
   Serial.printf(" * rslt = 0x%08x\n", rslt);
   if (rslt != 0) explainError(rslt, msgLen);
   else {
     Serial.println("Chacha Decoded:");
     hexDump(enc, 93);
+    Serial.printf("Number of rounds per second: %d\n", countProcess);
     if (memcmp(orig, enc, 93) == 0) Serial.println("Enc/Dec roud-trip successful!");
     else Serial.println("Enc/Dec roud-trip fail!");
   }

@@ -45,7 +45,7 @@ CRYSError_t nRFCrypto_Chacha::Process(uint8_t *msg, uint32_t msgLen, uint8_t *my
   CRYS_CHACHAUserContext_t pContextID;
   CRYS_CHACHA_Nonce_t pNonce;
   CRYS_CHACHA_Key_t myKey;
-  uint32_t initialCounter = 0;
+  uint32_t initialCounter;
   uint8_t finalLen = msgLen;
   if (finalLen < 64) finalLen = 64;
   uint8_t rounds = finalLen / 64;
@@ -60,14 +60,14 @@ CRYSError_t nRFCrypto_Chacha::Process(uint8_t *msg, uint32_t msgLen, uint8_t *my
   if (error != 0) return error;
   uint8_t pos = 0;
   for (uint8_t ix = 0; ix < rounds; ix++) {
-    Serial.printf("Round #%d: %d..%d / %d\n", (ix+1), (ix*64), (ix*64+63), finalLen);
+    // Serial.printf("Round #%d: %d..%d / %d\n", (ix+1), (ix*64), (ix*64+63), finalLen);
     memcpy(pDataIn, (msg + pos), 64);
     error = CRYS_CHACHA_Block(&pContextID, pDataIn, 64, pDataOut + pos);
     pos += 64;
     if (error != 0) return error;
   }
   if (extra > 0) {
-    Serial.printf("Extra round: %d..%d / %d\n", (rounds*64), (rounds*64+extra-1), msgLen);
+    // Serial.printf("Extra round: %d..%d / %d\n", (rounds*64), (rounds*64+extra-1), msgLen);
     memset(pDataIn + extra, 64 - extra, 64 - extra);
     memcpy(pDataIn, (msg + pos), extra);
     error = CRYS_CHACHA_Block(&pContextID, pDataIn, 64, pDataOut + pos);
