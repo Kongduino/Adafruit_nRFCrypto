@@ -41,6 +41,8 @@ class Adafruit_nRFCrypto {
 
 extern Adafruit_nRFCrypto nRFCrypto;
 
+#include "nRFCrypto_Ed25519.h"
+
 #if !CFG_DEBUG
 #define VERIFY_CRYS VERIFY_ERROR
 #else
