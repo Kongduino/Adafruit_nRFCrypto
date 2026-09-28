@@ -1,6 +1,6 @@
 /*
    The MIT License (MIT)
-   Copyright (c) 2020 Ha Thach (tinyusb.org) for Adafruit Industries
+   Copyright (c) 2026 Kongduino
    Permission is hereby granted, free of charge, to any person obtaining a copy
    of this software and associated documentation files (the "Software"), to deal
    in the Software without restriction, including without limitation the rights
@@ -18,37 +18,30 @@
    THE SOFTWARE.
 */
 
-#ifndef ADAFRUIT_NRFCRYPTO_H_
-#define ADAFRUIT_NRFCRYPTO_H_
+#ifndef NRFCRYPTO_RSA_PUBLICKEY_H_
+#define NRFCRYPTO_RSA_PUBLICKEY_H_
 
-#include "common_inc.h"
-#include "rtos.h"
-#include "nRFCrypto_Random.h"
-#include "nRFCrypto_Hash.h"
-#include "nRFCrypto_AES.h"
-#include "nRFCrypto_Chacha.h"
-#include "ecc/nRFCrypto_ECC.h"
-#include "rsa/nRFCrypto_RSA.h"
+class nRFCrypto_RSA;
 
-class Adafruit_nRFCrypto {
+class nRFCrypto_RSA_PublicKey {
   public:
-    Adafruit_nRFCrypto(void);
-    bool begin(void);
+    nRFCrypto_RSA_PublicKey(void);
+
+    // Builds the key from a modulus (N) and public exponent (E), both
+    // Big-Endian byte streams. ModulusSize must be one of 64/128/256 bytes
+    // (512/1024/2048 bits) on this hardware.
+    bool begin(const uint8_t* modulus, uint16_t modulusSize, const uint8_t* exponent, uint16_t exponentSize);
     void end(void);
-    nRFCrypto_Random Random;
+
+    // Modulus size in bytes; also the required signature/ciphertext buffer size.
+    uint16_t getModulusSize(void) { return _modulusSize; }
+
   private:
+    CRYS_RSAUserPubKey_t _key;
+    uint16_t _modulusSize;
     bool _begun;
+
+    friend class nRFCrypto_RSA;
 };
 
-extern Adafruit_nRFCrypto nRFCrypto;
-
-#include "nRFCrypto_Ed25519.h"
-
-#if !CFG_DEBUG
-#define VERIFY_CRYS VERIFY_ERROR
-#else
-#define VERIFY_CRYS(...) _GET_3RD_ARG(__VA_ARGS__, VERIFY_ERR_2ARGS, VERIFY_ERR_1ARGS)(__VA_ARGS__, dbg_strerr_crys)
-const char* dbg_strerr_crys(int32_t err);
-#endif
-
-#endif /* ADAFRUIT_NRFCRYPTO_H_ */ 
+#endif /* NRFCRYPTO_RSA_PUBLICKEY_H_ */

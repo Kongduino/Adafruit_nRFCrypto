@@ -1,6 +1,6 @@
 /*
    The MIT License (MIT)
-   Copyright (c) 2020 Ha Thach (tinyusb.org) for Adafruit Industries
+   Copyright (c) 2026 Kongduino
    Permission is hereby granted, free of charge, to any person obtaining a copy
    of this software and associated documentation files (the "Software"), to deal
    in the Software without restriction, including without limitation the rights
@@ -18,37 +18,34 @@
    THE SOFTWARE.
 */
 
-#ifndef ADAFRUIT_NRFCRYPTO_H_
-#define ADAFRUIT_NRFCRYPTO_H_
+#ifndef NRFCRYPTO_RSA_PRIVATEKEY_H_
+#define NRFCRYPTO_RSA_PRIVATEKEY_H_
 
-#include "common_inc.h"
-#include "rtos.h"
-#include "nRFCrypto_Random.h"
-#include "nRFCrypto_Hash.h"
-#include "nRFCrypto_AES.h"
-#include "nRFCrypto_Chacha.h"
-#include "ecc/nRFCrypto_ECC.h"
-#include "rsa/nRFCrypto_RSA.h"
+class nRFCrypto_RSA;
 
-class Adafruit_nRFCrypto {
+class nRFCrypto_RSA_PrivateKey {
   public:
-    Adafruit_nRFCrypto(void);
-    bool begin(void);
+    nRFCrypto_RSA_PrivateKey(void);
+
+    // Builds the key from a modulus (N), private exponent (D) and public
+    // exponent (E), all Big-Endian byte streams. This is the non-CRT form;
+    // there is no on-device key generation on this hardware (RSA-2048
+    // keygen is impractical on a Cortex-M4) - provision N/D/E from a key
+    // generated elsewhere (e.g. openssl).
+    bool begin(const uint8_t* modulus, uint16_t modulusSize,
+               const uint8_t* privExponent, uint16_t privExponentSize,
+               const uint8_t* pubExponent, uint16_t pubExponentSize);
     void end(void);
-    nRFCrypto_Random Random;
+
+    // Modulus size in bytes; also the required signature buffer size.
+    uint16_t getModulusSize(void) { return _modulusSize; }
+
   private:
+    CRYS_RSAUserPrivKey_t _key;
+    uint16_t _modulusSize;
     bool _begun;
+
+    friend class nRFCrypto_RSA;
 };
 
-extern Adafruit_nRFCrypto nRFCrypto;
-
-#include "nRFCrypto_Ed25519.h"
-
-#if !CFG_DEBUG
-#define VERIFY_CRYS VERIFY_ERROR
-#else
-#define VERIFY_CRYS(...) _GET_3RD_ARG(__VA_ARGS__, VERIFY_ERR_2ARGS, VERIFY_ERR_1ARGS)(__VA_ARGS__, dbg_strerr_crys)
-const char* dbg_strerr_crys(int32_t err);
-#endif
-
-#endif /* ADAFRUIT_NRFCRYPTO_H_ */ 
+#endif /* NRFCRYPTO_RSA_PRIVATEKEY_H_ */

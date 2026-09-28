@@ -75,6 +75,9 @@ int nRFCrypto_AES::Process(
   }
   uint8_t cx, ln = msgLen, ptLen;
   ptLen = blockLen(msgLen);
+  uint8_t modulo = ptLen % 16;
+  if(modulo > 0) modulo = 16 - modulo;
+  char pDataIn[ptLen] = {modulo};
   // Padding included!
   memcpy(pDataIn, msg, msgLen);
   size_t dataOutBuffSize;

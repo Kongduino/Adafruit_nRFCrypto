@@ -1,6 +1,6 @@
 /*
    The MIT License (MIT)
-   Copyright (c) 2020 Ha Thach (tinyusb.org) for Adafruit Industries
+   Copyright (c) 2026 Kongduino
    Permission is hereby granted, free of charge, to any person obtaining a copy
    of this software and associated documentation files (the "Software"), to deal
    in the Software without restriction, including without limitation the rights
@@ -18,37 +18,31 @@
    THE SOFTWARE.
 */
 
-#ifndef ADAFRUIT_NRFCRYPTO_H_
-#define ADAFRUIT_NRFCRYPTO_H_
+#include "nrf_cc310/include/crys_rsa_build.h"
 
-#include "common_inc.h"
-#include "rtos.h"
-#include "nRFCrypto_Random.h"
-#include "nRFCrypto_Hash.h"
-#include "nRFCrypto_AES.h"
-#include "nRFCrypto_Chacha.h"
-#include "ecc/nRFCrypto_ECC.h"
-#include "rsa/nRFCrypto_RSA.h"
+#include "Adafruit_nRFCrypto.h"
 
-class Adafruit_nRFCrypto {
-  public:
-    Adafruit_nRFCrypto(void);
-    bool begin(void);
-    void end(void);
-    nRFCrypto_Random Random;
-  private:
-    bool _begun;
-};
+//--------------------------------------------------------------------+
+// MACRO TYPEDEF CONSTANT ENUM DECLARATION
+//--------------------------------------------------------------------+
 
-extern Adafruit_nRFCrypto nRFCrypto;
 
-#include "nRFCrypto_Ed25519.h"
+//------------- IMPLEMENTATION -------------//
+nRFCrypto_RSA_PublicKey::nRFCrypto_RSA_PublicKey(void) {
+  _modulusSize = 0;
+  _begun = false;
+}
 
-#if !CFG_DEBUG
-#define VERIFY_CRYS VERIFY_ERROR
-#else
-#define VERIFY_CRYS(...) _GET_3RD_ARG(__VA_ARGS__, VERIFY_ERR_2ARGS, VERIFY_ERR_1ARGS)(__VA_ARGS__, dbg_strerr_crys)
-const char* dbg_strerr_crys(int32_t err);
-#endif
+bool nRFCrypto_RSA_PublicKey::begin(const uint8_t* modulus, uint16_t modulusSize, const uint8_t* exponent, uint16_t exponentSize) {
+  uint32_t err = CRYS_RSA_Build_PubKey(&_key, (uint8_t*) exponent, exponentSize, (uint8_t*) modulus, modulusSize);
+  VERIFY_CRYS(err, false);
 
-#endif /* ADAFRUIT_NRFCRYPTO_H_ */ 
+  _modulusSize = modulusSize;
+  _begun = true;
+  return true;
+}
+
+void nRFCrypto_RSA_PublicKey::end(void) {
+  _begun = false;
+  _modulusSize = 0;
+}
