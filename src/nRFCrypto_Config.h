@@ -31,7 +31,7 @@
 // are the biggest scratch buffers in this library (several KB) - set to 0
 // if you don't need RSA to skip compiling it entirely and save flash.
 #ifndef NRFCRYPTO_WITH_RSA
-#define NRFCRYPTO_WITH_RSA 0
+#define NRFCRYPTO_WITH_RSA 1
 #endif
 
 #endif /* NRFCRYPTO_CONFIG_H_ */
