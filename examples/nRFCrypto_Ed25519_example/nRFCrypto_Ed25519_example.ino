@@ -1,7 +1,7 @@
 // Example: using the nRFCrypto_Ed25519 class on a RAK4631.
 
 #include <Adafruit_nRFCrypto.h>
-
+#include <hexdump.h> // https://github.com/Kongduino/hexdump
 nRFCrypto_Ed25519 ed25519;
 
 static void printHex(const uint8_t* buf, size_t len) {
@@ -36,8 +36,8 @@ void setup() {
     while (1)
       ;
   }
-  Serial.print("Public:    ");
-  printHex(pub, sizeof(pub));
+  Serial.print("Public key:\n");
+  hexDump(pub, sizeof(pub));
   // Don't print secret keys in real use.
 
   if (!ed25519.sign(sig, msg, msg_len, secret)) {
@@ -46,8 +46,8 @@ void setup() {
     while (1)
       ;
   }
-  Serial.print("Signature: ");
-  printHex(sig, sizeof(sig));
+  Serial.print("Signature:\n");
+  hexDump(sig, sizeof(sig));
 
   Serial.print("Verify (good msg): ");
   Serial.println(ed25519.verify(sig, msg, msg_len, pub) ? "VALID" : "INVALID");
