@@ -27,6 +27,7 @@
 #include "nRFCrypto_Hash.h"
 #include "nRFCrypto_AES.h"
 #include "nRFCrypto_Chacha.h"
+#include "nRFCrypto_ChachaPoly.h"
 #include "ecc/nRFCrypto_ECC.h"
 #include "rsa/nRFCrypto_RSA.h"
 
@@ -43,6 +44,7 @@ class Adafruit_nRFCrypto {
 extern Adafruit_nRFCrypto nRFCrypto;
 
 #include "nRFCrypto_Ed25519.h"
+#include "nRFCrypto_X25519.h"
 
 #if !CFG_DEBUG
 #define VERIFY_CRYS VERIFY_ERROR
