@@ -10,6 +10,7 @@
 // the modulus/public exponent as the shareable public key.
 
 #include <Adafruit_nRFCrypto.h>
+#include <hexdump.h>  // https://github.com/Kongduino/hexdump
 
 // --- Demo-only RSA-2048 key pair (not for production use) ---
 static const uint8_t rsaModulus[256] = {
@@ -535,14 +536,6 @@ static const uint8_t rsaPubExponent[3] = { 0x01, 0x00, 0x01 };  // 65537
 nRFCrypto_RSA_PublicKey rsaPub;
 nRFCrypto_RSA_PrivateKey rsaPriv;
 
-static void printHex(const uint8_t* buf, size_t len) {
-  for (size_t i = 0; i < len; i++) {
-    if (buf[i] < 0x10) Serial.print('0');
-    Serial.print(buf[i], HEX);
-  }
-  Serial.println();
-}
-
 void setup() {
   Serial.begin(115200);
   while (!Serial) delay(10);  // remove if running without a serial monitor
@@ -581,7 +574,7 @@ void setup() {
   Serial.print("Signature (");
   Serial.print(signMs);
   Serial.println(" ms):");
-  printHex(sig, sigLen);
+  hexDump(sig, sigLen);
 
   t0 = millis();
   bool ok = nRFCrypto_RSA::verify(rsaPub, CRYS_RSA_HASH_SHA256_mode, msg, msg_len, sig, sigLen);
