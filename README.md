@@ -93,6 +93,16 @@ Chacha Decoded:
 Enc/Dec roud-trip successful!
 ```
 
-## UPDATE
+## More crypto: Ed25519, RSA, X25519, ChaCha20-Poly1305, ECDSA, HKDF/HMAC
 
-I have added timings.
+A big batch of additions, all wired into the main `Adafruit_nRFCrypto.h` umbrella so `#include <Adafruit_nRFCrypto.h>` is all you need:
+
+- **`nRFCrypto_Ed25519`** - keygen / sign / verify.
+- **`nRFCrypto_X25519`** - Curve25519 ECDH (`keygen`, `publicKey`, `agree`). Byte order is Little-Endian, matching RFC 7748 test vectors directly - the companion to Ed25519 for key agreement instead of signing.
+- **`nRFCrypto_ChachaPoly`** - ChaCha20-Poly1305 AEAD (`encrypt`/`decrypt`, in place). Unlike the plain `nRFCrypto_Chacha` stream cipher, this one actually authenticates: the CC310 hardware verifies the tag itself on decrypt. Note: the hardware requires non-empty additional data - pass a fixed 1-byte tag if your protocol doesn't have its own.
+- **ECDSA sign/verify** added to the existing `nRFCrypto_ECC` class, alongside `genKeyPair`/`SVDP_DH` - `nRFCrypto_ECC::sign()` / `::verify()`, any domain (secp256r1, etc.) the `PublicKey`/`PrivateKey` classes support.
+- **`nRFCrypto_RSA`** (+ `_PublicKey` / `_PrivateKey`) - RSA-2048 PKCS#1 v1.5 sign/verify. No on-device key generation: 2048-bit RSA keygen is impractically slow on a Cortex-M4 even with the CC310's PKA acceleration, so you provision N/D/E from a key generated elsewhere (e.g. `openssl genrsa`).
+- **`nRFCrypto_HMAC`** and **`nRFCrypto_HKDF`** - HMAC (streaming `begin`/`update`/`end`, plus a one-shot `compute()`) and HKDF (`derive()`, full RFC 5869 Extract-and-Expand in one call). The obvious pairing: HKDF to turn an X25519 shared secret into one or more purpose-bound keys, HMAC to authenticate a message with one of them when you don't want a full AEAD.
+- **`NRFCRYPTO_WITH_RSA`** feature flag in `nRFCrypto_Config.h` - RSA's key/context structs are the biggest scratch buffers in this library (several KB); set it to 0 to skip compiling RSA entirely and save flash if you don't need it. Defaults to 1.
+
+New examples: `nRFCrypto_Ed25519_example`, `X25519_ChachaPoly` (ECDH -> hash the shared secret -> AEAD encrypt/decrypt, the realistic pairing), `ECDSA_Sign_Verify`, `RSA_Sign_Verify`, `HKDF_HMAC`, and `KitchenSink` - one sketch that runs a single-shot correctness pass over every module above in one go.
