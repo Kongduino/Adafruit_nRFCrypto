@@ -39,6 +39,19 @@ class nRFCrypto_ECC
     static bool genKeyPair(nRFCrypto_ECC_PrivateKey& private_key, nRFCrypto_ECC_PublicKey& public_key);
     static uint32_t SVDP_DH(nRFCrypto_ECC_PrivateKey& private_key, nRFCrypto_ECC_PublicKey& peer_pubkey, uint8_t* shared_secret, uint32_t bufsize);
 
+    // ECDSA sign. hashMode picks the digest CC310 hashes msg with internally
+    // (e.g. CRYS_ECPKI_HASH_SHA256_mode). sig must be at least 2 * (curve
+    // order size in bytes) - 64 bytes for P-256. Returns the signature
+    // length written, or 0 on failure.
+    static uint32_t sign(nRFCrypto_ECC_PrivateKey& private_key, CRYS_ECPKI_HASH_OpMode_t hashMode,
+                         const uint8_t* msg, uint32_t msgLen,
+                         uint8_t* sig, uint32_t sigBufSize);
+
+    // ECDSA verify.
+    static bool verify(nRFCrypto_ECC_PublicKey& public_key, CRYS_ECPKI_HASH_OpMode_t hashMode,
+                        const uint8_t* msg, uint32_t msgLen,
+                        const uint8_t* sig, uint32_t sigLen);
+
   public:
     nRFCrypto_ECC(void);
     bool begin(void);

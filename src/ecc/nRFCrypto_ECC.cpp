@@ -24,6 +24,7 @@
 
 #include "nrf_cc310/include/crys_ecpki_kg.h"
 #include "nrf_cc310/include/crys_ecpki_dh.h"
+#include "nrf_cc310/include/crys_ecpki_ecdsa.h"
 
 #include "Adafruit_nRFCrypto.h"
 
@@ -62,6 +63,39 @@ uint32_t nRFCrypto_ECC::SVDP_DH(nRFCrypto_ECC_PrivateKey& private_key, nRFCrypto
 
   VERIFY_CRYS(err, 0);
   return bufsize;
+}
+
+uint32_t nRFCrypto_ECC::sign(nRFCrypto_ECC_PrivateKey& private_key, CRYS_ECPKI_HASH_OpMode_t hashMode,
+                              const uint8_t* msg, uint32_t msgLen,
+                              uint8_t* sig, uint32_t sigBufSize)
+{
+  CRYS_ECDSA_SignUserContext_t* ctx = (CRYS_ECDSA_SignUserContext_t*) rtos_malloc( sizeof(CRYS_ECDSA_SignUserContext_t) );
+  VERIFY(ctx, 0);
+
+  uint32_t sigLen = sigBufSize;
+  uint32_t err = CRYS_ECDSA_Sign(nRFCrypto.Random.getContext(), CRYS_RND_GenerateVector,
+                                 ctx, &private_key._key, hashMode,
+                                 (uint8_t*) msg, msgLen, sig, &sigLen);
+  rtos_free(ctx);
+
+  VERIFY_CRYS(err, 0);
+  return sigLen;
+}
+
+bool nRFCrypto_ECC::verify(nRFCrypto_ECC_PublicKey& public_key, CRYS_ECPKI_HASH_OpMode_t hashMode,
+                            const uint8_t* msg, uint32_t msgLen,
+                            const uint8_t* sig, uint32_t sigLen)
+{
+  CRYS_ECDSA_VerifyUserContext_t* ctx = (CRYS_ECDSA_VerifyUserContext_t*) rtos_malloc( sizeof(CRYS_ECDSA_VerifyUserContext_t) );
+  VERIFY(ctx, false);
+
+  uint32_t err = CRYS_ECDSA_Verify(ctx, &public_key._key, hashMode,
+                                    (uint8_t*) sig, sigLen,
+                                    (uint8_t*) msg, msgLen);
+  rtos_free(ctx);
+
+  VERIFY_CRYS(err, false);
+  return true;
 }
 
 nRFCrypto_ECC::nRFCrypto_ECC(void)
