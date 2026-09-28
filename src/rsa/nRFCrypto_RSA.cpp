@@ -18,6 +18,9 @@
    THE SOFTWARE.
 */
 
+#include "../nRFCrypto_Config.h"
+#if NRFCRYPTO_WITH_RSA
+
 #include "nrf_cc310/include/crys_rsa_schemes.h"
 
 #include "Adafruit_nRFCrypto.h"
@@ -77,3 +80,5 @@ bool nRFCrypto_RSA::begin(void) {
 void nRFCrypto_RSA::end(void) {
 
 }
+
+#endif /* NRFCRYPTO_WITH_RSA */

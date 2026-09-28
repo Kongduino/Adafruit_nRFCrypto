@@ -29,6 +29,9 @@
 #ifndef NRFCRYPTO_RSA_H_
 #define NRFCRYPTO_RSA_H_
 
+#include "../nRFCrypto_Config.h"
+#if NRFCRYPTO_WITH_RSA
+
 #include "nrf_cc310/include/crys_rsa_types.h"
 #include "nrf_cc310/include/crys_rsa_error.h"
 #include "nrf_cc310/include/crys_rsa_build.h"
@@ -59,4 +62,5 @@ class nRFCrypto_RSA {
     void end(void);
 };
 
+#endif /* NRFCRYPTO_WITH_RSA */
 #endif /* NRFCRYPTO_RSA_H_ */

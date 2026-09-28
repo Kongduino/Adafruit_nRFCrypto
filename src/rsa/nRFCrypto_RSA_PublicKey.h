@@ -21,6 +21,9 @@
 #ifndef NRFCRYPTO_RSA_PUBLICKEY_H_
 #define NRFCRYPTO_RSA_PUBLICKEY_H_
 
+#include "../nRFCrypto_Config.h"
+#if NRFCRYPTO_WITH_RSA
+
 class nRFCrypto_RSA;
 
 class nRFCrypto_RSA_PublicKey {
@@ -44,4 +47,5 @@ class nRFCrypto_RSA_PublicKey {
     friend class nRFCrypto_RSA;
 };
 
+#endif /* NRFCRYPTO_WITH_RSA */
 #endif /* NRFCRYPTO_RSA_PUBLICKEY_H_ */

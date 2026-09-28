@@ -18,6 +18,9 @@
    THE SOFTWARE.
 */
 
+#include "../nRFCrypto_Config.h"
+#if NRFCRYPTO_WITH_RSA
+
 #include "nrf_cc310/include/crys_rsa_build.h"
 
 #include "Adafruit_nRFCrypto.h"
@@ -46,3 +49,5 @@ void nRFCrypto_RSA_PublicKey::end(void) {
   _begun = false;
   _modulusSize = 0;
 }
+
+#endif /* NRFCRYPTO_WITH_RSA */

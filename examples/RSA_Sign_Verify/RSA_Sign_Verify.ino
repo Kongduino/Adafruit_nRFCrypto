@@ -12,6 +12,10 @@
 #include <Adafruit_nRFCrypto.h>
 #include <hexdump.h>  // https://github.com/Kongduino/hexdump
 
+#if !NRFCRYPTO_WITH_RSA
+#error "This example needs RSA support - set NRFCRYPTO_WITH_RSA to 1 in nRFCrypto_Config.h (or via a build flag)"
+#endif
+
 // --- Demo-only RSA-2048 key pair (not for production use) ---
 static const uint8_t rsaModulus[256] = {
   0xA5,

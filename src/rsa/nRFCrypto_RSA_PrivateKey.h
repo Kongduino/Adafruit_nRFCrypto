@@ -21,6 +21,9 @@
 #ifndef NRFCRYPTO_RSA_PRIVATEKEY_H_
 #define NRFCRYPTO_RSA_PRIVATEKEY_H_
 
+#include "../nRFCrypto_Config.h"
+#if NRFCRYPTO_WITH_RSA
+
 class nRFCrypto_RSA;
 
 class nRFCrypto_RSA_PrivateKey {
@@ -48,4 +51,5 @@ class nRFCrypto_RSA_PrivateKey {
     friend class nRFCrypto_RSA;
 };
 
+#endif /* NRFCRYPTO_WITH_RSA */
 #endif /* NRFCRYPTO_RSA_PRIVATEKEY_H_ */

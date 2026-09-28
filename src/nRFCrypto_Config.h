@@ -1,6 +1,6 @@
 /*
    The MIT License (MIT)
-   Copyright (c) 2020 Ha Thach (tinyusb.org) for Adafruit Industries
+   Copyright (c) 2026 Kongduino
    Permission is hereby granted, free of charge, to any person obtaining a copy
    of this software and associated documentation files (the "Software"), to deal
    in the Software without restriction, including without limitation the rights
@@ -18,43 +18,20 @@
    THE SOFTWARE.
 */
 
-#ifndef ADAFRUIT_NRFCRYPTO_H_
-#define ADAFRUIT_NRFCRYPTO_H_
+// Feature switches for optional, heavier modules. Each flag defaults to
+// enabled (matching prior releases) unless already defined - either edit
+// the default below, or leave this file alone and pass e.g.
+// -DNRFCRYPTO_WITH_RSA=0 as a compiler build flag (works with PlatformIO's
+// build_flags, or Arduino IDE via boards.txt build.extra_flags).
 
-#include "common_inc.h"
-#include "rtos.h"
-#include "nRFCrypto_Config.h"
-#include "nRFCrypto_Random.h"
-#include "nRFCrypto_Hash.h"
-#include "nRFCrypto_AES.h"
-#include "nRFCrypto_Chacha.h"
-#include "nRFCrypto_ChachaPoly.h"
-#include "ecc/nRFCrypto_ECC.h"
+#ifndef NRFCRYPTO_CONFIG_H_
+#define NRFCRYPTO_CONFIG_H_
 
-#if NRFCRYPTO_WITH_RSA
-#include "rsa/nRFCrypto_RSA.h"
+// RSA (nRFCrypto_RSA / _PublicKey / _PrivateKey). Its key/context structs
+// are the biggest scratch buffers in this library (several KB) - set to 0
+// if you don't need RSA to skip compiling it entirely and save flash.
+#ifndef NRFCRYPTO_WITH_RSA
+#define NRFCRYPTO_WITH_RSA 0
 #endif
 
-class Adafruit_nRFCrypto {
-  public:
-    Adafruit_nRFCrypto(void);
-    bool begin(void);
-    void end(void);
-    nRFCrypto_Random Random;
-  private:
-    bool _begun;
-};
-
-extern Adafruit_nRFCrypto nRFCrypto;
-
-#include "nRFCrypto_Ed25519.h"
-#include "nRFCrypto_X25519.h"
-
-#if !CFG_DEBUG
-#define VERIFY_CRYS VERIFY_ERROR
-#else
-#define VERIFY_CRYS(...) _GET_3RD_ARG(__VA_ARGS__, VERIFY_ERR_2ARGS, VERIFY_ERR_1ARGS)(__VA_ARGS__, dbg_strerr_crys)
-const char* dbg_strerr_crys(int32_t err);
-#endif
-
-#endif /* ADAFRUIT_NRFCRYPTO_H_ */ 
+#endif /* NRFCRYPTO_CONFIG_H_ */
