@@ -4,13 +4,13 @@
 #include <hexdump.h> // https://github.com/Kongduino/hexdump
 nRFCrypto_Ed25519 ed25519;
 
-static void printHex(const uint8_t* buf, size_t len) {
-  for (size_t i = 0; i < len; i++) {
-    if (buf[i] < 0x10) Serial.print('0');
-    Serial.print(buf[i], HEX);
-  }
-  Serial.println();
-}
+// static void printHex(const uint8_t* buf, size_t len) {
+//   for (size_t i = 0; i < len; i++) {
+//     if (buf[i] < 0x10) Serial.print('0');
+//     Serial.print(buf[i], HEX);
+//   }
+//   Serial.println();
+// }
 
 void setup() {
   Serial.begin(115200);
