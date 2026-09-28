@@ -1,6 +1,6 @@
 /*
    The MIT License (MIT)
-   Copyright (c) 2020 Ha Thach (tinyusb.org) for Adafruit Industries
+   Copyright (c) 2026 Kongduino
    Permission is hereby granted, free of charge, to any person obtaining a copy
    of this software and associated documentation files (the "Software"), to deal
    in the Software without restriction, including without limitation the rights
@@ -18,45 +18,26 @@
    THE SOFTWARE.
 */
 
-#ifndef ADAFRUIT_NRFCRYPTO_H_
-#define ADAFRUIT_NRFCRYPTO_H_
+#include "Adafruit_nRFCrypto.h"
 
-#include "common_inc.h"
-#include "rtos.h"
-#include "nRFCrypto_Config.h"
-#include "nRFCrypto_Random.h"
-#include "nRFCrypto_Hash.h"
-#include "nRFCrypto_HMAC.h"
-#include "nRFCrypto_HKDF.h"
-#include "nRFCrypto_AES.h"
-#include "nRFCrypto_Chacha.h"
-#include "nRFCrypto_ChachaPoly.h"
-#include "ecc/nRFCrypto_ECC.h"
+//--------------------------------------------------------------------+
+// MACRO TYPEDEF CONSTANT ENUM DECLARATION
+//--------------------------------------------------------------------+
 
-#if NRFCRYPTO_WITH_RSA
-#include "rsa/nRFCrypto_RSA.h"
-#endif
-
-class Adafruit_nRFCrypto {
-  public:
-    Adafruit_nRFCrypto(void);
-    bool begin(void);
-    void end(void);
-    nRFCrypto_Random Random;
-  private:
-    bool _begun;
-};
-
-extern Adafruit_nRFCrypto nRFCrypto;
-
-#include "nRFCrypto_Ed25519.h"
-#include "nRFCrypto_X25519.h"
-
-#if !CFG_DEBUG
-#define VERIFY_CRYS VERIFY_ERROR
-#else
-#define VERIFY_CRYS(...) _GET_3RD_ARG(__VA_ARGS__, VERIFY_ERR_2ARGS, VERIFY_ERR_1ARGS)(__VA_ARGS__, dbg_strerr_crys)
-const char* dbg_strerr_crys(int32_t err);
-#endif
-
-#endif /* ADAFRUIT_NRFCRYPTO_H_ */ 
+//------------- IMPLEMENTATION -------------//
+bool nRFCrypto_HKDF::derive(CRYS_HKDF_HASH_OpMode_t hashMode,
+                            const uint8_t* salt, size_t saltLen,
+                            const uint8_t* ikm, uint32_t ikmLen,
+                            const uint8_t* info, uint32_t infoLen,
+                            uint8_t* okm, uint32_t okmLen,
+                            bool isStrongKey) {
+  uint32_t err = CRYS_HKDF_KeyDerivFunc(
+    hashMode,
+    (uint8_t*) salt, saltLen,
+    (uint8_t*) ikm, ikmLen,
+    (uint8_t*) info, infoLen,
+    okm, okmLen,
+    isStrongKey ? SASI_TRUE : SASI_FALSE);
+  VERIFY_CRYS(err, false);
+  return true;
+}

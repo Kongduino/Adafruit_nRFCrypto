@@ -1,6 +1,6 @@
 /*
    The MIT License (MIT)
-   Copyright (c) 2020 Ha Thach (tinyusb.org) for Adafruit Industries
+   Copyright (c) 2026 Kongduino
    Permission is hereby granted, free of charge, to any person obtaining a copy
    of this software and associated documentation files (the "Software"), to deal
    in the Software without restriction, including without limitation the rights
@@ -18,45 +18,34 @@
    THE SOFTWARE.
 */
 
-#ifndef ADAFRUIT_NRFCRYPTO_H_
-#define ADAFRUIT_NRFCRYPTO_H_
+#ifndef NRFCRYPTO_HMAC_H_
+#define NRFCRYPTO_HMAC_H_
 
-#include "common_inc.h"
-#include "rtos.h"
-#include "nRFCrypto_Config.h"
-#include "nRFCrypto_Random.h"
-#include "nRFCrypto_Hash.h"
-#include "nRFCrypto_HMAC.h"
-#include "nRFCrypto_HKDF.h"
-#include "nRFCrypto_AES.h"
-#include "nRFCrypto_Chacha.h"
-#include "nRFCrypto_ChachaPoly.h"
-#include "ecc/nRFCrypto_ECC.h"
+#include "nrf_cc310/include/crys_hmac.h"
 
-#if NRFCRYPTO_WITH_RSA
-#include "rsa/nRFCrypto_RSA.h"
-#endif
-
-class Adafruit_nRFCrypto {
+class nRFCrypto_HMAC {
   public:
-    Adafruit_nRFCrypto(void);
-    bool begin(void);
-    void end(void);
-    nRFCrypto_Random Random;
+    nRFCrypto_HMAC(void);
+
+    // mode is the underlying HASH used, e.g. CRYS_HASH_SHA256_mode. If
+    // keySize is bigger than the HASH block size, the key is hashed first.
+    bool begin(CRYS_HASH_OperationMode_t mode, uint8_t* key, uint16_t keySize);
+    bool update(uint8_t data[], size_t size);
+    uint8_t end(uint32_t result[16]);
+    uint8_t end(uint8_t result[64]) {
+      return end((uint32_t*) result);
+    }
+
+    // One-shot convenience: computes the HMAC of a single buffer in one call.
+    // Returns the digest length in bytes, or 0 on failure.
+    static uint8_t compute(CRYS_HASH_OperationMode_t mode,
+                           uint8_t* key, uint16_t keySize,
+                           uint8_t* data, size_t dataSize,
+                           uint32_t result[16]);
+
   private:
-    bool _begun;
+    CRYS_HMACUserContext_t _context;
+    uint8_t _digest_len;
 };
 
-extern Adafruit_nRFCrypto nRFCrypto;
-
-#include "nRFCrypto_Ed25519.h"
-#include "nRFCrypto_X25519.h"
-
-#if !CFG_DEBUG
-#define VERIFY_CRYS VERIFY_ERROR
-#else
-#define VERIFY_CRYS(...) _GET_3RD_ARG(__VA_ARGS__, VERIFY_ERR_2ARGS, VERIFY_ERR_1ARGS)(__VA_ARGS__, dbg_strerr_crys)
-const char* dbg_strerr_crys(int32_t err);
-#endif
-
-#endif /* ADAFRUIT_NRFCRYPTO_H_ */ 
+#endif /* NRFCRYPTO_HMAC_H_ */
