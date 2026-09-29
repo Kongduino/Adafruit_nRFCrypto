@@ -106,3 +106,7 @@ A big batch of additions, all wired into the main `Adafruit_nRFCrypto.h` umbrell
 - **`NRFCRYPTO_WITH_RSA`** feature flag in `nRFCrypto_Config.h` - RSA's key/context structs are the biggest scratch buffers in this library (several KB); set it to 0 to skip compiling RSA entirely and save flash if you don't need it. Defaults to 1.
 
 New examples: `nRFCrypto_Ed25519_example`, `X25519_ChachaPoly` (ECDH -> hash the shared secret -> AEAD encrypt/decrypt, the realistic pairing), `ECDSA_Sign_Verify`, `RSA_Sign_Verify`, `HKDF_HMAC`, and `KitchenSink` - one sketch that runs a single-shot correctness pass over every module above in one go.
+
+### COMPILE GUARDS
+
+I added some compile guards – you can remove RSA, Chacha, HKDF/HMAC to save flash.
