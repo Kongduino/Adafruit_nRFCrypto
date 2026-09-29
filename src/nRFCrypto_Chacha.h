@@ -21,6 +21,9 @@
 #ifndef NRFCRYPTO_CHACHA_H_
 #define NRFCRYPTO_CHACHA_H_
 
+#include "nRFCrypto_Config.h"
+#if NRFCRYPTO_WITH_CHACHA
+
 #include "nrf_cc310/include/crys_chacha_error.h"
 #include "nrf_cc310/include/crys_chacha.h"
 
@@ -36,4 +39,5 @@ class nRFCrypto_Chacha {
     bool _begun;
 };
 
-#endif /* NRFCRYPTO_RANDOM_H_ */
+#endif /* NRFCRYPTO_WITH_CHACHA */
+#endif /* NRFCRYPTO_CHACHA_H_ */

@@ -18,6 +18,9 @@
    THE SOFTWARE.
 */
 
+#include "nRFCrypto_Config.h"
+#if NRFCRYPTO_WITH_CHACHA
+
 #include "Arduino.h"
 #include "nRFCrypto_ChachaPoly.h"
 #include <cstring>
@@ -76,3 +79,5 @@ CRYSError_t nRFCrypto_ChachaPoly::decrypt(uint8_t* msg, size_t msgLen,
                                           uint8_t mac[MAC_LEN]) {
   return process(msg, msgLen, key, nonce, aad, aadLen, mac, CRYS_CHACHA_Decrypt);
 }
+
+#endif /* NRFCRYPTO_WITH_CHACHA */

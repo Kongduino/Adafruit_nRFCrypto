@@ -26,11 +26,19 @@
 #include "nRFCrypto_Config.h"
 #include "nRFCrypto_Random.h"
 #include "nRFCrypto_Hash.h"
+
+#if NRFCRYPTO_WITH_HKDF_HMAC
 #include "nRFCrypto_HMAC.h"
 #include "nRFCrypto_HKDF.h"
+#endif
+
 #include "nRFCrypto_AES.h"
+
+#if NRFCRYPTO_WITH_CHACHA
 #include "nRFCrypto_Chacha.h"
 #include "nRFCrypto_ChachaPoly.h"
+#endif
+
 #include "ecc/nRFCrypto_ECC.h"
 
 #if NRFCRYPTO_WITH_RSA

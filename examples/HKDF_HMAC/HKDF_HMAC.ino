@@ -7,6 +7,10 @@
 #include <Adafruit_nRFCrypto.h>
 #include <hexdump.h>  // https://github.com/Kongduino/hexdump
 
+#if !NRFCRYPTO_WITH_HKDF_HMAC
+#error "This example needs HKDF/HMAC support - set NRFCRYPTO_WITH_HKDF_HMAC to 1 in nRFCrypto_Config.h (or via a build flag)"
+#endif
+
 nRFCrypto_X25519 aliceX, bobX;
 nRFCrypto_HMAC hmac;
 

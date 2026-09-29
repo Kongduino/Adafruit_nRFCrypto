@@ -131,6 +131,11 @@ void setup() {
   msgLen = 64;
   memset(decBuf, 0, msgLen);
   memset(encBuf, 0, msgLen);
+
+#if !NRFCRYPTO_WITH_CHACHA
+  Serial.println("\nChaCha20 skipped (NRFCRYPTO_WITH_CHACHA is 0 in nRFCrypto_Config.h)");
+  return;
+#else
   nRFCrypto_Chacha urara; // You need to speak Korean to understand this one ;-)
   urara.begin();
   CRYS_CHACHA_Nonce_t pNonce;
@@ -222,11 +227,13 @@ void setup() {
     if (memcmp(orig, enc, 93) == 0) Serial.println("Enc/Dec roud-trip successful!");
     else Serial.println("Enc/Dec roud-trip fail!");
   }
+#endif /* NRFCRYPTO_WITH_CHACHA */
 }
 
 void loop() {
 }
 
+#if NRFCRYPTO_WITH_CHACHA
 void explainError(int rslt, uint8_t msgLen) {
   Serial.print(" * ");
   if (CRYS_CHACHA_INVALID_NONCE_ERROR == rslt) Serial.println("CRYS_CHACHA_INVALID_NONCE_ERROR");
@@ -243,3 +250,4 @@ void explainError(int rslt, uint8_t msgLen) {
   else if (CRYS_CHACHA_IS_NOT_SUPPORTED == rslt) Serial.println("CRYS_CHACHA_IS_NOT_SUPPORTED");
   else Serial.println("No idea...");
 }
+#endif /* NRFCRYPTO_WITH_CHACHA */

@@ -18,6 +18,9 @@
    THE SOFTWARE.
 */
 
+#include "nRFCrypto_Config.h"
+#if NRFCRYPTO_WITH_HKDF_HMAC
+
 #include "Adafruit_nRFCrypto.h"
 
 //--------------------------------------------------------------------+
@@ -41,3 +44,5 @@ bool nRFCrypto_HKDF::derive(CRYS_HKDF_HASH_OpMode_t hashMode,
   VERIFY_CRYS(err, false);
   return true;
 }
+
+#endif /* NRFCRYPTO_WITH_HKDF_HMAC */

@@ -18,6 +18,9 @@
    THE SOFTWARE.
 */
 
+#include "nRFCrypto_Config.h"
+#if NRFCRYPTO_WITH_CHACHA
+
 #include "Arduino.h"
 #include "nRFCrypto_Chacha.h"
 #include "nrf_cc310/include/crys_chacha.h"
@@ -78,3 +81,5 @@ CRYSError_t nRFCrypto_Chacha::Process(uint8_t *msg, uint32_t msgLen, uint8_t *my
   if (error != 0) return error;
   return CRYS_CHACHA_Free(&pContextID);
 }
+
+#endif /* NRFCRYPTO_WITH_CHACHA */

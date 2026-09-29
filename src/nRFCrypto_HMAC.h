@@ -21,6 +21,9 @@
 #ifndef NRFCRYPTO_HMAC_H_
 #define NRFCRYPTO_HMAC_H_
 
+#include "nRFCrypto_Config.h"
+#if NRFCRYPTO_WITH_HKDF_HMAC
+
 #include "nrf_cc310/include/crys_hmac.h"
 
 class nRFCrypto_HMAC {
@@ -48,4 +51,5 @@ class nRFCrypto_HMAC {
     uint8_t _digest_len;
 };
 
+#endif /* NRFCRYPTO_WITH_HKDF_HMAC */
 #endif /* NRFCRYPTO_HMAC_H_ */

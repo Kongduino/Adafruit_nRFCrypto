@@ -1,8 +1,9 @@
 // Kitchen sink: a single-shot correctness pass over every module covered by
 // this library's other examples - Random, Hash, AES (ECB/CBC/CTR), ChaCha20
-// (stream), ChaCha20-Poly1305 (AEAD), Ed25519, X25519 (paired with
-// ChaCha20-Poly1305, same as the X25519_ChachaPoly example), ECDSA
-// (secp256r1), RSA-2048 (skipped if disabled), and HKDF+HMAC.
+// (stream), ChaCha20-Poly1305 (AEAD, skipped if disabled), Ed25519, X25519
+// (paired with ChaCha20-Poly1305, same as the X25519_ChachaPoly example),
+// ECDSA (secp256r1), RSA-2048 (skipped if disabled), and HKDF+HMAC (skipped
+// if disabled).
 //
 // Unlike the individual examples, nothing here loops for a second to measure
 // throughput, and nothing halts on failure - each section prints OK/FAIL (or
@@ -13,13 +14,20 @@
 #include <hexdump.h>  // https://github.com/Kongduino/hexdump
 
 nRFCrypto_AES aes;
+
+#if NRFCRYPTO_WITH_CHACHA
 nRFCrypto_Chacha chacha;
 nRFCrypto_ChachaPoly cp;
+#endif
+
 nRFCrypto_Ed25519 ed25519;
 nRFCrypto_X25519 aliceX, bobX;
 nRFCrypto_ECC_PrivateKey ecdsaPriv;
 nRFCrypto_ECC_PublicKey ecdsaPub;
+
+#if NRFCRYPTO_WITH_HKDF_HMAC
 nRFCrypto_HMAC hmac;
+#endif
 
 #if NRFCRYPTO_WITH_RSA
 nRFCrypto_RSA_PublicKey rsaPub;
@@ -600,6 +608,10 @@ void test_aes() {
 
 void test_chacha() {
   Serial.println("\n=== ChaCha20 (stream) ===");
+#if !NRFCRYPTO_WITH_CHACHA
+  Serial.println("skipped (NRFCRYPTO_WITH_CHACHA is 0 in nRFCrypto_Config.h)");
+  return;
+#else
   chacha.begin();
   uint8_t keyNonce[44];  // first 32 bytes = key, next 12 = nonce
   nRFCrypto.Random.generate(keyNonce, sizeof(keyNonce));
@@ -611,10 +623,15 @@ void test_chacha() {
   if (ok) ok = chacha.Process(buf, sizeof(buf), keyNonce, chacha.decryptFlag) == CRYS_OK;
   if (ok) ok = memcmp(buf, orig, sizeof(orig)) == 0;
   Serial.println(ok ? "OK" : "FAIL");
+#endif /* NRFCRYPTO_WITH_CHACHA */
 }
 
 void test_x25519_chachapoly() {
   Serial.println("\n=== X25519 + ChaCha20-Poly1305 ===");
+#if !NRFCRYPTO_WITH_CHACHA
+  Serial.println("skipped (NRFCRYPTO_WITH_CHACHA is 0 in nRFCrypto_Config.h)");
+  return;
+#else
   aliceX.begin();
   bobX.begin();
   cp.begin();
@@ -659,6 +676,7 @@ void test_x25519_chachapoly() {
   if (ok) ok = memcmp(msg, text, msgLen) == 0;
   Serial.print("Encrypt/decrypt roundtrip: ");
   Serial.println(ok ? "OK" : "FAIL");
+#endif /* NRFCRYPTO_WITH_CHACHA */
 }
 
 void test_ed25519() {
@@ -758,6 +776,7 @@ void test_rsa() {
 #endif
 }
 
+#if NRFCRYPTO_WITH_HKDF_HMAC
 static bool deriveKeys(uint8_t encKey[32], uint8_t macKey[32], const uint8_t sharedSecret[32]) {
   const char* salt = "nRFCrypto-HKDF-demo";
   bool ok = true;
@@ -812,6 +831,12 @@ void test_hkdf_hmac() {
   Serial.print("Verify (tampered msg): ");
   Serial.println(bad ? "VALID (unexpected!)" : "INVALID (expected)");
 }
+#else
+void test_hkdf_hmac() {
+  Serial.println("\n=== HKDF + HMAC ===");
+  Serial.println("skipped (NRFCRYPTO_WITH_HKDF_HMAC is 0 in nRFCrypto_Config.h)");
+}
+#endif /* NRFCRYPTO_WITH_HKDF_HMAC */
 
 void setup() {
   Serial.begin(115200);

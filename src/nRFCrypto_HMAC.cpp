@@ -18,6 +18,9 @@
    THE SOFTWARE.
 */
 
+#include "nRFCrypto_Config.h"
+#if NRFCRYPTO_WITH_HKDF_HMAC
+
 #include "Adafruit_nRFCrypto.h"
 
 //--------------------------------------------------------------------+
@@ -62,3 +65,5 @@ uint8_t nRFCrypto_HMAC::compute(CRYS_HASH_OperationMode_t mode,
   VERIFY_ERROR(CRYS_HMAC(mode, key, keySize, data, dataSize, result), 0);
   return (mode < CRYS_HASH_NumOfModes) ? digest_len_arr[mode] : 0;
 }
+
+#endif /* NRFCRYPTO_WITH_HKDF_HMAC */

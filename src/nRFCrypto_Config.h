@@ -34,4 +34,18 @@
 #define NRFCRYPTO_WITH_RSA 1
 #endif
 
+// HKDF + HMAC (nRFCrypto_HKDF / nRFCrypto_HMAC) - set to 0 if you don't need
+// key derivation / message authentication to skip compiling them entirely
+// and save flash.
+#ifndef NRFCRYPTO_WITH_HKDF_HMAC
+#define NRFCRYPTO_WITH_HKDF_HMAC 1
+#endif
+
+// ChaCha20 + ChaCha20-Poly1305 (nRFCrypto_Chacha / nRFCrypto_ChachaPoly) -
+// set to 0 if you don't need the ChaCha stream cipher / AEAD to skip
+// compiling them entirely and save flash.
+#ifndef NRFCRYPTO_WITH_CHACHA
+#define NRFCRYPTO_WITH_CHACHA 1
+#endif
+
 #endif /* NRFCRYPTO_CONFIG_H_ */

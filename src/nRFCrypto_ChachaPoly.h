@@ -21,6 +21,9 @@
 #ifndef NRFCRYPTO_CHACHAPOLY_H_
 #define NRFCRYPTO_CHACHAPOLY_H_
 
+#include "nRFCrypto_Config.h"
+#if NRFCRYPTO_WITH_CHACHA
+
 #include "nrf_cc310/include/crys_chacha_poly_error.h"
 #include "nrf_cc310/include/crys_chacha_poly.h"
 
@@ -63,4 +66,5 @@ class nRFCrypto_ChachaPoly {
     bool _begun;
 };
 
+#endif /* NRFCRYPTO_WITH_CHACHA */
 #endif /* NRFCRYPTO_CHACHAPOLY_H_ */

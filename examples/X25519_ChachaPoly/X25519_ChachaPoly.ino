@@ -7,6 +7,10 @@
 #include <Adafruit_nRFCrypto.h>
 #include <hexdump.h>  // https://github.com/Kongduino/hexdump
 
+#if !NRFCRYPTO_WITH_CHACHA
+#error "This example needs ChaCha20-Poly1305 support - set NRFCRYPTO_WITH_CHACHA to 1 in nRFCrypto_Config.h (or via a build flag)"
+#endif
+
 nRFCrypto_X25519 aliceX, bobX;
 nRFCrypto_ChachaPoly cp;
 nRFCrypto_Hash hash;
