@@ -57,14 +57,17 @@ public:
     return nRFCrypto.begin();
   }
 
-  // Last CryptoCell error code (0 = CRYS_OK).
+  // Error code of the last operation: CRYS_OK, a CryptoCell code, or an
+  // NRFCRYPTO_ERR_* code from Adafruit_nRFCrypto.h. Set on every failure,
+  // except that agree() returning false with CRYS_OK means an all-zero
+  // shared secret.
   uint32_t lastError() const {
     return _lastErr;
   }
 
   // Generate a random keypair. The secret comes back clamped.
   bool keygen(uint8_t pub[PUBLIC_KEY_LEN], uint8_t secret[SECRET_KEY_LEN]) {
-    if (!nRFCrypto.begin()) return false;
+    if (!nRFCrypto.begin()) return fail(NRFCRYPTO_ERR_NOT_STARTED);
     alignas(4) uint8_t pk[PUBLIC_KEY_LEN];
     alignas(4) uint8_t sk[SECRET_KEY_LEN];
     size_t pkLen = sizeof(pk);
@@ -75,7 +78,8 @@ public:
       _lastErr = CRYS_ECMONT_KeyPair(
         pk, &pkLen, sk, &skLen,
         (void*)nRFCrypto.Random.getContext(), CRYS_RND_GenerateVector, &_temp);
-      ok = (_lastErr == CRYS_OK) && pkLen == PUBLIC_KEY_LEN && skLen == SECRET_KEY_LEN;
+      if (_lastErr == CRYS_OK && !(pkLen == PUBLIC_KEY_LEN && skLen == SECRET_KEY_LEN)) _lastErr = NRFCRYPTO_ERR_BAD_OUTPUT;
+      ok = _lastErr == CRYS_OK;
     }
     if (ok) {
       memcpy(pub, pk, PUBLIC_KEY_LEN);
@@ -88,7 +92,7 @@ public:
 
   // Derives the public key that corresponds to a given secret scalar.
   bool publicKey(uint8_t pub[PUBLIC_KEY_LEN], const uint8_t secret[SECRET_KEY_LEN]) {
-    if (!nRFCrypto.begin()) return false;
+    if (!nRFCrypto.begin()) return fail(NRFCRYPTO_ERR_NOT_STARTED);
     alignas(4) uint8_t pk[PUBLIC_KEY_LEN];
     alignas(4) uint8_t sk[SECRET_KEY_LEN];
     memcpy(sk, secret, sizeof(sk));
@@ -98,7 +102,8 @@ public:
     {
       nRFCrypto_PowerScope cc;
       _lastErr = CRYS_ECMONT_ScalarmultBase(pk, &pkLen, sk, sizeof(sk), &_temp);
-      ok = (_lastErr == CRYS_OK) && pkLen == PUBLIC_KEY_LEN;
+      if (_lastErr == CRYS_OK && !(pkLen == PUBLIC_KEY_LEN)) _lastErr = NRFCRYPTO_ERR_BAD_OUTPUT;
+      ok = _lastErr == CRYS_OK;
     }
     if (ok) memcpy(pub, pk, PUBLIC_KEY_LEN);
     wipe(sk, sizeof(sk));
@@ -112,7 +117,7 @@ public:
   // output is not uniformly random and must not be used directly as key
   // material.
   bool agree(uint8_t shared[SHARED_SECRET_LEN], const uint8_t secret[SECRET_KEY_LEN], const uint8_t peerPublic[PUBLIC_KEY_LEN]) {
-    if (!nRFCrypto.begin()) return false;
+    if (!nRFCrypto.begin()) return fail(NRFCRYPTO_ERR_NOT_STARTED);
     alignas(4) uint8_t sh[SHARED_SECRET_LEN];
     alignas(4) uint8_t sk[SECRET_KEY_LEN];
     alignas(4) uint8_t pk[PUBLIC_KEY_LEN];
@@ -125,7 +130,8 @@ public:
     {
       nRFCrypto_PowerScope cc;
       _lastErr = CRYS_ECMONT_Scalarmult(sh, &shLen, sk, sizeof(sk), pk, sizeof(pk), &_temp);
-      ok = (_lastErr == CRYS_OK) && shLen == SHARED_SECRET_LEN;
+      if (_lastErr == CRYS_OK && !(shLen == SHARED_SECRET_LEN)) _lastErr = NRFCRYPTO_ERR_BAD_OUTPUT;
+      ok = _lastErr == CRYS_OK;
     }
     if (ok) {
       uint8_t acc = 0;
@@ -140,6 +146,12 @@ public:
   }
 
 private:
+  // Records why an operation failed before or outside the CC310 call.
+  bool fail(uint32_t err) {
+    _lastErr = err;
+    return false;
+  }
+
   static void clamp(uint8_t k[SECRET_KEY_LEN]) {
     k[0] &= 248;
     k[31] &= 127;
