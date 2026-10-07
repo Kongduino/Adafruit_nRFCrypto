@@ -25,9 +25,15 @@
 // agreement instead of signing. Byte arrays here are Little-Endian, matching
 // RFC 7748 test vectors directly (unlike the Big-Endian RSA/ECDSA classes).
 //
-// Handles: CC310 power bracketing, DMA alignment of buffers. Each instance
-// owns its scratch buffers. A single instance is NOT thread-safe; guard with
-// a mutex if used from several FreeRTOS tasks.
+// Scalars are clamped and the peer u-coordinate's top bit is masked before
+// they reach the CC310, as RFC 7748 section 5 requires, so results match any
+// conforming software X25519 whatever the hardware does internally.
+//
+// Handles: CC310 power bracketing, DMA alignment of buffers. Every operation
+// (re)starts nRFCrypto if needed and never calls nRFCrypto.end(), so it is
+// safe to use either after a single begin() or between per-call
+// nRFCrypto.begin()/end() pairs owned by the caller. A single instance is NOT
+// thread-safe; guard with a mutex if used from several FreeRTOS tasks.
 
 #ifndef NRFCRYPTO_X25519_H_
 #define NRFCRYPTO_X25519_H_
@@ -45,12 +51,10 @@ public:
   };
 
   nRFCrypto_X25519()
-    : _begun(false), _lastErr(0) {}
+    : _lastErr(0) {}
 
   bool begin() {
-    if (_begun) return true;
-    _begun = nRFCrypto.begin();
-    return _begun;
+    return nRFCrypto.begin();
   }
 
   // Last CryptoCell error code (0 = CRYS_OK).
@@ -58,17 +62,21 @@ public:
     return _lastErr;
   }
 
-  // Generate a random keypair.
+  // Generate a random keypair. The secret comes back clamped.
   bool keygen(uint8_t pub[PUBLIC_KEY_LEN], uint8_t secret[SECRET_KEY_LEN]) {
-    if (!_begun) return false;
+    if (!nRFCrypto.begin()) return false;
     alignas(4) uint8_t pk[PUBLIC_KEY_LEN];
     alignas(4) uint8_t sk[SECRET_KEY_LEN];
     size_t pkLen = sizeof(pk);
     size_t skLen = sizeof(sk);
-    _lastErr = CRYS_ECMONT_KeyPair(
-      pk, &pkLen, sk, &skLen,
-      (void*) nRFCrypto.Random.getContext(), CRYS_RND_GenerateVector, &_temp);
-    bool ok = (_lastErr == CRYS_OK) && pkLen == PUBLIC_KEY_LEN && skLen == SECRET_KEY_LEN;
+    bool ok;
+    {
+      nRFCrypto_PowerScope cc;
+      _lastErr = CRYS_ECMONT_KeyPair(
+        pk, &pkLen, sk, &skLen,
+        (void*)nRFCrypto.Random.getContext(), CRYS_RND_GenerateVector, &_temp);
+      ok = (_lastErr == CRYS_OK) && pkLen == PUBLIC_KEY_LEN && skLen == SECRET_KEY_LEN;
+    }
     if (ok) {
       memcpy(pub, pk, PUBLIC_KEY_LEN);
       memcpy(secret, sk, SECRET_KEY_LEN);
@@ -80,32 +88,50 @@ public:
 
   // Derives the public key that corresponds to a given secret scalar.
   bool publicKey(uint8_t pub[PUBLIC_KEY_LEN], const uint8_t secret[SECRET_KEY_LEN]) {
-    if (!_begun) return false;
+    if (!nRFCrypto.begin()) return false;
     alignas(4) uint8_t pk[PUBLIC_KEY_LEN];
     alignas(4) uint8_t sk[SECRET_KEY_LEN];
     memcpy(sk, secret, sizeof(sk));
+    clamp(sk);
     size_t pkLen = sizeof(pk);
-    _lastErr = CRYS_ECMONT_ScalarmultBase(pk, &pkLen, sk, sizeof(sk), &_temp);
-    bool ok = (_lastErr == CRYS_OK) && pkLen == PUBLIC_KEY_LEN;
+    bool ok;
+    {
+      nRFCrypto_PowerScope cc;
+      _lastErr = CRYS_ECMONT_ScalarmultBase(pk, &pkLen, sk, sizeof(sk), &_temp);
+      ok = (_lastErr == CRYS_OK) && pkLen == PUBLIC_KEY_LEN;
+    }
     if (ok) memcpy(pub, pk, PUBLIC_KEY_LEN);
     wipe(sk, sizeof(sk));
     wipe(&_temp, sizeof(_temp));
     return ok;
   }
 
-  // ECDH: shared = secret * peerPublic. Run the result through a KDF/hash
-  // before using it as a symmetric key - a raw X25519 output is not
-  // uniformly random and must not be used directly as key material.
+  // ECDH: shared = secret * peerPublic. Fails if the result is all zeros
+  // (peer sent a small-order point, RFC 7748 section 6.1). Run the result
+  // through a KDF/hash before using it as a symmetric key - a raw X25519
+  // output is not uniformly random and must not be used directly as key
+  // material.
   bool agree(uint8_t shared[SHARED_SECRET_LEN], const uint8_t secret[SECRET_KEY_LEN], const uint8_t peerPublic[PUBLIC_KEY_LEN]) {
-    if (!_begun) return false;
+    if (!nRFCrypto.begin()) return false;
     alignas(4) uint8_t sh[SHARED_SECRET_LEN];
     alignas(4) uint8_t sk[SECRET_KEY_LEN];
     alignas(4) uint8_t pk[PUBLIC_KEY_LEN];
     memcpy(sk, secret, sizeof(sk));
     memcpy(pk, peerPublic, sizeof(pk));
+    clamp(sk);
+    pk[31] &= 0x7F;
     size_t shLen = sizeof(sh);
-    _lastErr = CRYS_ECMONT_Scalarmult(sh, &shLen, sk, sizeof(sk), pk, sizeof(pk), &_temp);
-    bool ok = (_lastErr == CRYS_OK) && shLen == SHARED_SECRET_LEN;
+    bool ok;
+    {
+      nRFCrypto_PowerScope cc;
+      _lastErr = CRYS_ECMONT_Scalarmult(sh, &shLen, sk, sizeof(sk), pk, sizeof(pk), &_temp);
+      ok = (_lastErr == CRYS_OK) && shLen == SHARED_SECRET_LEN;
+    }
+    if (ok) {
+      uint8_t acc = 0;
+      for (size_t i = 0; i < SHARED_SECRET_LEN; i++) acc |= sh[i];
+      ok = acc != 0;
+    }
     if (ok) memcpy(shared, sh, SHARED_SECRET_LEN);
     wipe(sk, sizeof(sk));
     wipe(sh, sizeof(sh));
@@ -114,12 +140,17 @@ public:
   }
 
 private:
+  static void clamp(uint8_t k[SECRET_KEY_LEN]) {
+    k[0] &= 248;
+    k[31] &= 127;
+    k[31] |= 64;
+  }
+
   static void wipe(void* p, size_t n) {
     volatile uint8_t* v = (volatile uint8_t*)p;
     while (n--) *v++ = 0;
   }
 
-  bool _begun;
   uint32_t _lastErr;
 
   // CryptoCell scratch state (4-byte aligned for DMA)
