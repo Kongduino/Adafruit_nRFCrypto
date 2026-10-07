@@ -57,6 +57,21 @@ class Adafruit_nRFCrypto {
 
 extern Adafruit_nRFCrypto nRFCrypto;
 
+// Powers the CC310 on for the lifetime of the object, then restores the
+// previous ENABLE state (so it powers down again if it was off before).
+class nRFCrypto_PowerScope {
+  public:
+    nRFCrypto_PowerScope() {
+      _prev = NRF_CRYPTOCELL->ENABLE;
+      NRF_CRYPTOCELL->ENABLE = 1;
+    }
+    ~nRFCrypto_PowerScope() {
+      NRF_CRYPTOCELL->ENABLE = _prev;
+    }
+  private:
+    uint32_t _prev;
+};
+
 #include "nRFCrypto_Ed25519.h"
 #include "nRFCrypto_X25519.h"
 
