@@ -37,12 +37,12 @@ nRFCrypto_Random::nRFCrypto_Random(void) {
 bool nRFCrypto_Random::begin(void) {
   // skip if already called begin before
   if (_begun) return true;
-  _begun = true;
   CRYS_RND_WorkBuff_t* workbuf = (CRYS_RND_WorkBuff_t*) rtos_malloc(sizeof(CRYS_RND_WorkBuff_t));
   VERIFY(workbuf);
   uint32_t err = CRYS_RndInit(&_state, workbuf);
   rtos_free(workbuf);
   VERIFY_ERROR(err, false);
+  _begun = true;  // only once initialized, so a failed begin() is retried
   return true;
 }
 

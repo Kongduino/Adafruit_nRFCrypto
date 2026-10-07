@@ -57,6 +57,12 @@ class Adafruit_nRFCrypto {
 
 extern Adafruit_nRFCrypto nRFCrypto;
 
+// lastError() codes for failures outside the CC310 (its own codes are 0x00Fxxxxx).
+#define NRFCRYPTO_ERR_NOT_STARTED 0xFFFF0001UL  // nRFCrypto.begin() failed
+#define NRFCRYPTO_ERR_NO_MEMORY   0xFFFF0002UL  // could not copy the message to RAM
+#define NRFCRYPTO_ERR_BAD_INPUT   0xFFFF0003UL  // input outside the documented range
+#define NRFCRYPTO_ERR_BAD_OUTPUT  0xFFFF0004UL  // CC310 succeeded but returned an unexpected size
+
 // Powers the CC310 on for the lifetime of the object, then restores the
 // previous ENABLE state (so it powers down again if it was off before).
 class nRFCrypto_PowerScope {

@@ -67,7 +67,8 @@ public:
     return nRFCrypto.begin();
   }
 
-  // Last CryptoCell error code (0 = CRYS_OK).
+  // Error code of the last operation: CRYS_OK, a CryptoCell code, or an
+  // NRFCRYPTO_ERR_* code from Adafruit_nRFCrypto.h. Set on every failure.
   uint32_t lastError() const {
     return _lastErr;
   }
@@ -76,7 +77,7 @@ public:
   //   pub:    32 bytes out
   //   secret: 64 bytes out (seed || pub).
   bool keygen(uint8_t pub[PUBLIC_KEY_LEN], uint8_t secret[SECRET_KEY_LEN]) {
-    if (!nRFCrypto.begin()) return false;
+    if (!nRFCrypto.begin()) return fail(NRFCRYPTO_ERR_NOT_STARTED);
     alignas(4) uint8_t sk[SECRET_KEY_LEN];
     alignas(4) uint8_t pk[PUBLIC_KEY_LEN];
     size_t sk_len = sizeof(sk);
@@ -87,7 +88,8 @@ public:
       _lastErr = CRYS_ECEDW_KeyPair(
         sk, &sk_len, pk, &pk_len,
         (void*)nRFCrypto.Random.getContext(), CRYS_RND_GenerateVector, &_temp);
-      ok = (_lastErr == CRYS_OK) && sk_len == SECRET_KEY_LEN && pk_len == PUBLIC_KEY_LEN;
+      if (_lastErr == CRYS_OK && !(sk_len == SECRET_KEY_LEN && pk_len == PUBLIC_KEY_LEN)) _lastErr = NRFCRYPTO_ERR_BAD_OUTPUT;
+      ok = _lastErr == CRYS_OK;
     }
     if (ok) {
       memcpy(secret, sk, SECRET_KEY_LEN);
@@ -103,7 +105,7 @@ public:
     uint8_t sig[SIGNATURE_LEN],
     const uint8_t* msg, size_t msg_len,
     const uint8_t secret[SECRET_KEY_LEN]) {
-    if (!nRFCrypto.begin()) return false;
+    if (!nRFCrypto.begin()) return fail(NRFCRYPTO_ERR_NOT_STARTED);
     alignas(4) uint8_t sk[SECRET_KEY_LEN];
     alignas(4) uint8_t sg[SIGNATURE_LEN];
     memcpy(sk, secret, sizeof(sk));
@@ -112,7 +114,7 @@ public:
     const uint8_t* m = alignedView(msg, msg_len, &owned);
     if (!m) {
       wipe(sk, sizeof(sk));
-      return false;
+      return fail(NRFCRYPTO_ERR_NO_MEMORY);
     }
     bool ok;
     {
@@ -120,7 +122,8 @@ public:
       _lastErr = CRYS_ECEDW_Sign(
         sg, &sg_len, (uint8_t*)m, msg_len,
         sk, sizeof(sk), &_temp);
-      ok = (_lastErr == CRYS_OK) && sg_len == SIGNATURE_LEN;
+      if (_lastErr == CRYS_OK && !(sg_len == SIGNATURE_LEN)) _lastErr = NRFCRYPTO_ERR_BAD_OUTPUT;
+      ok = _lastErr == CRYS_OK;
     }
     if (ok) memcpy(sig, sg, SIGNATURE_LEN);
     if (owned) free(owned);
@@ -135,14 +138,14 @@ public:
     const uint8_t sig[SIGNATURE_LEN],
     const uint8_t* msg, size_t msg_len,
     const uint8_t pub[PUBLIC_KEY_LEN]) {
-    if (!nRFCrypto.begin()) return false;
+    if (!nRFCrypto.begin()) return fail(NRFCRYPTO_ERR_NOT_STARTED);
     alignas(4) uint8_t sg[SIGNATURE_LEN];
     alignas(4) uint8_t pk[PUBLIC_KEY_LEN];
     memcpy(sg, sig, sizeof(sg));
     memcpy(pk, pub, sizeof(pk));
     uint8_t* owned = nullptr;
     const uint8_t* m = alignedView(msg, msg_len, &owned);
-    if (!m) return false;
+    if (!m) return fail(NRFCRYPTO_ERR_NO_MEMORY);
     {
       nRFCrypto_PowerScope cc;
       _lastErr = CRYS_ECEDW_Verify(
@@ -161,8 +164,8 @@ public:
   bool scalarMultBase(uint8_t point[PUBLIC_KEY_LEN], const uint8_t scalar[32]) {
     static const uint32_t FOUR_Q[8] = {0x73d74fb4, 0x60498c69, 0x8bde7359, 0x537be77a,
                                        0x00000000, 0x00000000, 0x00000000, 0x40000000};
-    if (scalar[31] >= 0x20) return false;
-    if (!nRFCrypto.begin()) return false;
+    if (scalar[31] >= 0x20) return fail(NRFCRYPTO_ERR_BAD_INPUT);
+    if (!nRFCrypto.begin()) return fail(NRFCRYPTO_ERR_NOT_STARTED);
     uint32_t s[8];
     alignas(4) uint32_t x[8];
     alignas(4) uint32_t y[8];
@@ -198,6 +201,12 @@ public:
   }
 
 private:
+  // Records why an operation failed before or outside the CC310 call.
+  bool fail(uint32_t err) {
+    _lastErr = err;
+    return false;
+  }
+
   static void wipe(void* p, size_t n) {
     volatile uint8_t* v = (volatile uint8_t*)p;
     while (n--) *v++ = 0;

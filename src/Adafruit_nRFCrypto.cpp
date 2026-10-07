@@ -53,14 +53,18 @@ Adafruit_nRFCrypto::Adafruit_nRFCrypto(void) {
 bool Adafruit_nRFCrypto::begin(void) {
   // skip if already called begin before
   if (_begun) return true;
-  _begun = true;
 
 #ifndef USE_CC310_LIB_NO_INTERRUPT
   NVIC_SetPriority(CRYPTOCELL_IRQn, 2);
   NVIC_EnableIRQ(CRYPTOCELL_IRQn);
 #endif
+  // Marked begun only once both steps succeed, so a failed begin() is retried.
   VERIFY_ERROR(SaSi_LibInit(), false);
-  VERIFY(Random.begin());
+  if (!Random.begin()) {
+    SaSi_LibFini();
+    return false;
+  }
+  _begun = true;
   return true;
 }
 
