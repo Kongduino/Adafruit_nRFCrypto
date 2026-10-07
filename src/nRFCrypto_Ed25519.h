@@ -37,6 +37,20 @@
 #include "Adafruit_nRFCrypto.h"
 #include "nrf_cc310/include/crys_ec_edw_api.h"
 #include "nrf_cc310/include/crys_rnd.h"
+#include "nrf_cc310/include/ssi_pal_mutex.h"
+
+// Internal functions of libnrf_cc310 0.9.13, not in its public headers. The
+// signatures and call sequence are taken from that binary's own
+// EcEdwSeedKeyPair / EcEdwSign; any other library build may differ.
+extern "C" {
+extern SaSi_PalMutex sasiAsymCryptoMutex;
+SaSiError_t SaSi_PalPowerSaveModeSelect(uint32_t isPowerSaveMode);
+CRYSError_t PkaInitPka(uint32_t opSizeInBits, uint32_t regSizeInPkaWords, uint32_t* pRegsCount);
+void PkaFinishAndMutexUnlock(uint32_t regsCount);
+const void* EcEdwGetDomain25519(void);
+CRYSError_t EcEdwScalarMultBase(uint32_t* pX, uint32_t* pY, const uint32_t* pScalar,
+                                size_t scalarSizeInWords, const void* pDomain);
+}
 
 class nRFCrypto_Ed25519 {
 public:
@@ -137,6 +151,50 @@ public:
     }
     if (owned) free(owned);
     return _lastErr == CRYS_OK;
+  }
+
+  // Encoded Ed25519 point scalar * B (B = base point), for building signatures
+  // such as XEdDSA's R = r * B. scalar is 32 bytes little-endian and must be
+  // below 2^253 (any value reduced mod q is). The CC310 loop runs once per two
+  // bits of the scalar, so q * 4 is added first: every scalar then has exactly
+  // 255 bits and the run time does not depend on it.
+  bool scalarMultBase(uint8_t point[PUBLIC_KEY_LEN], const uint8_t scalar[32]) {
+    static const uint32_t FOUR_Q[8] = {0x73d74fb4, 0x60498c69, 0x8bde7359, 0x537be77a,
+                                       0x00000000, 0x00000000, 0x00000000, 0x40000000};
+    if (scalar[31] >= 0x20) return false;
+    if (!nRFCrypto.begin()) return false;
+    uint32_t s[8];
+    alignas(4) uint32_t x[8];
+    alignas(4) uint32_t y[8];
+    memcpy(s, scalar, sizeof(s));
+    uint64_t carry = 0;
+    for (int i = 0; i < 8; i++) {
+      carry += (uint64_t)s[i] + FOUR_Q[i];
+      s[i] = (uint32_t)carry;
+      carry >>= 32;
+    }
+    const void* domain = EcEdwGetDomain25519();
+    uint32_t regsCount = 30;
+    {
+      nRFCrypto_PowerScope cc;
+      _lastErr = SaSi_PalMutexLock(&sasiAsymCryptoMutex, 0xFFFFFFFF);
+      if (_lastErr != CRYS_OK) {
+        wipe(s, sizeof(s));
+        return false;
+      }
+      _lastErr = SaSi_PalPowerSaveModeSelect(0);
+      if (_lastErr == CRYS_OK)
+        _lastErr = PkaInitPka(((const uint32_t*)domain)[8], 0, &regsCount);
+      if (_lastErr == CRYS_OK)
+        _lastErr = EcEdwScalarMultBase(x, y, s, 8, domain);
+      PkaFinishAndMutexUnlock(regsCount);
+    }
+    wipe(s, sizeof(s));
+    if (_lastErr != CRYS_OK) return false;
+    y[7] |= x[0] << 31;  // sign of x into the top bit of y (RFC 8032 encoding)
+    memcpy(point, y, PUBLIC_KEY_LEN);
+    wipe(x, sizeof(x));
+    return true;
   }
 
 private:
