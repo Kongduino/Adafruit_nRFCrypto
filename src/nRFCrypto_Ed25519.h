@@ -39,9 +39,16 @@
 #include "nrf_cc310/include/crys_rnd.h"
 #include "nrf_cc310/include/ssi_pal_mutex.h"
 
-// Internal functions of libnrf_cc310 0.9.13, not in its public headers. The
-// signatures and call sequence are taken from that binary's own
-// EcEdwSeedKeyPair / EcEdwSign; any other library build may differ.
+// Internal functions of libnrf_cc310 0.9.13, not in its public headers. They
+// are documented in ARM's published CryptoCell-312 runtime (BSD-3-Clause),
+// https://github.com/ARM-software/cryptocell-312-runtime, which uses CC_
+// names where this CC310 build uses SaSi_ / CRYS_:
+//   codesafe/src/crypto_api/pki/ec_edw/ec_edw.h  EcEdwScalarMultBase
+//   codesafe/src/crypto_api/pki/ec_edw/ec_edw.c  EcEdwSeedKeyPair: mutex lock,
+//     CC_IS_WAKE, PkaInitPka(ecModSizeInBits, 0, &30), ..., PkaFinishAndMutexUnlock
+//   codesafe/src/crypto_api/pki/common/pka.h     PkaInitPka, PkaFinishAndMutexUnlock
+//   shared/include/proj/cc3x/cc_util_pm.h        CC_IS_WAKE = PowerSaveModeSelect(false)
+// The examples check results against reference values on the device.
 extern "C" {
 extern SaSi_PalMutex sasiAsymCryptoMutex;
 SaSiError_t SaSi_PalPowerSaveModeSelect(uint32_t isPowerSaveMode);
