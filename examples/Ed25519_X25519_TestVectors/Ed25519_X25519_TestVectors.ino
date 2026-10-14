@@ -355,6 +355,25 @@ static void testLifecycle() {
   nRFCrypto.end();
   check("X25519 keygen after nRFCrypto.end() (shared RNG)", x.keygen(pub, secret));
   memset(secret, 0, sizeof(secret));
+
+  // end() keeps the library and the RNG running; shutdown() tears them down,
+  // and the next begin() starts them again (the RNG start is the slow part).
+  nRFCrypto.end();
+  uint32_t t0 = micros();
+  bool begun = nRFCrypto.begin();
+  uint32_t afterEnd = micros() - t0;
+  nRFCrypto.shutdown();
+  t0 = micros();
+  begun &= nRFCrypto.begin();
+  uint32_t afterShutdown = micros() - t0;
+  check("begin() succeeds after end() and after shutdown()", begun);
+  Serial.printf("INFO  begin() after end(): %lu us, after shutdown(): %lu us\n", (unsigned long)afterEnd,
+                (unsigned long)afterShutdown);
+  nRFCrypto.shutdown();
+  check("Ed25519 verify after nRFCrypto.shutdown()", edVerifyTest1());
+  nRFCrypto.shutdown();
+  check("X25519 keygen after nRFCrypto.shutdown() (RNG restarted)", x.keygen(pub, secret));
+  memset(secret, 0, sizeof(secret));
 }
 
 // ---- Cross-check against software --------------------------------------------
