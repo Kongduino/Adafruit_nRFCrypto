@@ -36,12 +36,20 @@
 #include <Arduino.h>
 #include "Adafruit_nRFCrypto.h"
 #include "nrf_cc310/include/crys_ec_edw_api.h"
+#include "nrf_cc310/include/crys_ec_mont_edw_error.h"
 #include "nrf_cc310/include/crys_rnd.h"
 #include "nrf_cc310/include/ssi_pal_mutex.h"
 
-// Internal functions of libnrf_cc310 0.9.13, not in its public headers. The
-// signatures and call sequence are taken from that binary's own
-// EcEdwSeedKeyPair / EcEdwSign; any other library build may differ.
+// Internal functions of libnrf_cc310 0.9.13, not in its public headers. They
+// are documented in ARM's published CryptoCell-312 runtime (BSD-3-Clause),
+// https://github.com/ARM-software/cryptocell-312-runtime, which uses CC_
+// names where this CC310 build uses SaSi_ / CRYS_:
+//   codesafe/src/crypto_api/pki/ec_edw/ec_edw.h  EcEdwScalarMultBase
+//   codesafe/src/crypto_api/pki/ec_edw/ec_edw.c  EcEdwSeedKeyPair: mutex lock,
+//     CC_IS_WAKE, PkaInitPka(ecModSizeInBits, 0, &30), ..., PkaFinishAndMutexUnlock
+//   codesafe/src/crypto_api/pki/common/pka.h     PkaInitPka, PkaFinishAndMutexUnlock
+//   shared/include/proj/cc3x/cc_util_pm.h        CC_IS_WAKE = PowerSaveModeSelect(false)
+// The examples check results against reference values on the device.
 extern "C" {
 extern SaSi_PalMutex sasiAsymCryptoMutex;
 SaSiError_t SaSi_PalPowerSaveModeSelect(uint32_t isPowerSaveMode);
@@ -134,10 +142,15 @@ public:
 
   // Verify a signature. Returns true only if valid.
   // Pass a 4-byte aligned msg in RAM to avoid a heap copy.
+  // The CC310 accepts S + q, S + 2q, ... like S, so S is checked first: a
+  // signature whose S is not below the group order is invalid (RFC 8032
+  // section 5.1.7) and fails with CRYS_ECEDW_SIGN_VERIFY_FAILED_ERROR, like
+  // any other invalid signature.
   bool verify(
     const uint8_t sig[SIGNATURE_LEN],
     const uint8_t* msg, size_t msg_len,
     const uint8_t pub[PUBLIC_KEY_LEN]) {
+    if (!isCanonicalS(sig + 32)) return fail(CRYS_ECEDW_SIGN_VERIFY_FAILED_ERROR);
     if (!nRFCrypto.begin()) return fail(NRFCRYPTO_ERR_NOT_STARTED);
     alignas(4) uint8_t sg[SIGNATURE_LEN];
     alignas(4) uint8_t pk[PUBLIC_KEY_LEN];
@@ -205,6 +218,20 @@ private:
   bool fail(uint32_t err) {
     _lastErr = err;
     return false;
+  }
+
+  // True if the 32-byte little-endian s is below the group order
+  // q = 2^252 + 27742317777372353535851937790883648493. s is public, so this
+  // does not need to run in constant time.
+  static bool isCanonicalS(const uint8_t s[32]) {
+    static const uint8_t Q[32] = {0xed, 0xd3, 0xf5, 0x5c, 0x1a, 0x63, 0x12, 0x58,
+                                  0xd6, 0x9c, 0xf7, 0xa2, 0xde, 0xf9, 0xde, 0x14,
+                                  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                                  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10};
+    for (int i = 31; i >= 0; i--) {
+      if (s[i] != Q[i]) return s[i] < Q[i];
+    }
+    return false;  // s == q
   }
 
   static void wipe(void* p, size_t n) {
