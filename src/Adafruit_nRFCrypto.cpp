@@ -69,6 +69,10 @@ bool Adafruit_nRFCrypto::begin(void) {
 }
 
 void Adafruit_nRFCrypto::end(void) {
+  // Nothing to do: see the header. shutdown() is the full teardown.
+}
+
+void Adafruit_nRFCrypto::shutdown(void) {
   // skipped if not begin-ed
   if (!_begun) return;
   _begun = false;

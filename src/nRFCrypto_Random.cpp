@@ -23,6 +23,7 @@
  */
 
 #include "Adafruit_nRFCrypto.h"
+#include "nrf_cc310/include/crys_rnd_error.h"
 
 //--------------------------------------------------------------------+
 // MACRO TYPEDEF CONSTANT ENUM DECLARATION
@@ -73,7 +74,12 @@ bool nRFCrypto_Random::reseed(void) {
 }
 
 bool nRFCrypto_Random::generate(uint8_t* buf, uint16_t bufsize) {
-  VERIFY_ERROR(CRYS_RND_GenerateVector(&_state, bufsize, buf), false);
+  uint32_t err = CRYS_RND_GenerateVector(&_state, bufsize, buf);
+  // The RNG now stays instantiated across nRFCrypto.end(), so after 2^32 - 2
+  // requests it asks for a reseed instead of a fresh instantiation.
+  if (err == CRYS_RND_RESEED_COUNTER_OVERFLOW_ERROR && reseed())
+    err = CRYS_RND_GenerateVector(&_state, bufsize, buf);
+  VERIFY_ERROR(err, false);
   return true;
 }
 

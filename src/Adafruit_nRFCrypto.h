@@ -49,7 +49,13 @@ class Adafruit_nRFCrypto {
   public:
     Adafruit_nRFCrypto(void);
     bool begin(void);
+    // Keeps the library and the RNG running, so the next begin() is free:
+    // starting the RNG collects hardware entropy and takes about 97 ms on an
+    // nRF52840. Staying running does not keep the CC310 powered.
     void end(void);
+    // Full teardown: finalizes the library and clears the RNG state. The next
+    // begin() starts both again.
+    void shutdown(void);
     nRFCrypto_Random Random;
   private:
     bool _begun;
