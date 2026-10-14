@@ -250,19 +250,22 @@ static void testEd25519Vectors() {
     memset(secret, 0, sizeof(secret));
   }
 
-  // S + L: RFC 8032 section 5.1.7 requires rejecting S >= L.
+  // S >= L: RFC 8032 section 5.1.7 requires rejecting it. The CC310 alone
+  // accepts S + L; nRFCrypto_Ed25519::verify() checks S first.
   alignas(4) uint8_t msg[4];
   const EdVector& t1 = ED_VECTORS[0];
-  // Neither the CC310 nor the software checks S < L. What matters on a mesh
-  // is that every node gives the same answer.
   bool hw = ed.verify(ED_SIG_S_PLUS_L, msg, t1.msgLen, t1.pub);
+  check("RFC 8032 test 1 with S + L: rejected", !hw);
+  check("S + L reported as an invalid signature", ed.lastError() == CRYS_ECEDW_SIGN_VERIFY_FAILED_ERROR);
+  alignas(4) uint8_t bigS[64];
+  memcpy(bigS, t1.sig, 32);
+  memset(bigS + 32, 0xFF, 32);
+  check("RFC 8032 test 1 with S = 2^256 - 1: rejected", !ed.verify(bigS, msg, t1.msgLen, t1.pub));
 #if WITH_SOFTWARE_CROSSCHECK
+  // meshtastic/Crypto rejects S >= L from 5231adb on; older versions accept it.
   bool sw = Ed25519::verify(ED_SIG_S_PLUS_L, t1.pub, msg, t1.msgLen);
-  Serial.printf("INFO  S + L: CC310 %s, software %s (RFC 8032 says reject)\n", hw ? "accepts" : "rejects",
-                sw ? "accepts" : "rejects");
-  check("RFC 8032 test 1 with S + L: CC310 and software agree", hw == sw);
-#else
-  Serial.printf("INFO  S + L: CC310 %s (RFC 8032 says reject)\n", hw ? "accepts" : "rejects");
+  Serial.printf("INFO  S + L: software %s%s\n", sw ? "accepts" : "rejects",
+                sw ? " (meshtastic/Crypto before 5231adb)" : "");
 #endif
 }
 
